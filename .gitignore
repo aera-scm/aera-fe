@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+Thumbs.db
