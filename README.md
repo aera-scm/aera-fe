@@ -19,10 +19,38 @@ React 18, TypeScript, Vite, Cloudscape Design System, TanStack Query, Recharts, 
 
 ## Getting started
 
+Use Node 24.21.0, pnpm 12.5.1, Python 3.12.14 and uv 0.12.18. Python is used only
+for repository security and pre-commit tooling; the console remains TypeScript.
+
+```sh
+pnpm install --frozen-lockfile
+uv sync --locked
+pnpm check
+uv run --locked yamllint --strict .
+uv run --locked pip-audit --local
+uv run --locked pre-commit run --all-files
 ```
-pnpm install
-pnpm dev
-```
+
+These commands work on Windows and Linux. Keep existing Git hooks: run pre-commit
+explicitly rather than replacing an existing `core.hooksPath`.
+
+ESLint and strict TypeScript currently check the tooling scripts. `pnpm test`
+explicitly reports that there are no application tests; when test files are added,
+Vitest runs and failures or empty collection fail the command. No console screens,
+dev server or application build exist yet. React and application dependencies will
+be introduced with their implementing work package.
+
+`pnpm-lock.yaml` and `uv.lock` pin direct and transitive tooling dependencies
+(NFR-SEC-06). CI runs lint, strict type checks, available tests, YAML validation,
+secret scanning and vulnerability audits for both dependency sets. CI has read-only
+repository permissions and no AWS credentials or deployment steps.
+
+`pnpm scan` checks tracked and non-ignored candidate files, refuses credential file
+paths without reading their contents, and never verifies credentials over the
+network (NFR-SEC-03). Lockfiles are excluded from secret detection because they
+contain integrity digests; they remain covered by dependency audits. Initial
+installation and audits require public registry access. Installed lint, types,
+tests and secret checks require no cloud account.
 
 API types are generated from the backend schemas and committed as `src/api/types.generated.ts`.
 

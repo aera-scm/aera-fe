@@ -1,0 +1,24 @@
+{
+  "name": "aera-fe",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.5.1",
+  "engines": { "node": "24.21.0", "pnpm": "12.5.1" },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "scan": "uv run --locked python scripts/security.py",
+    "audit:dependencies": "pnpm audit --audit-level low",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm scan && pnpm audit:dependencies"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.6",
+    "eslint": "10.11.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vitest": "5.0.1"
+  }
+}

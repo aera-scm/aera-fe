@@ -1,0 +1,28 @@
+# NFR-SEC-03 / NFR-SEC-06: use the same locked tools as CI.
+repos:
+  - repo: local
+    hooks:
+      - id: lint
+        name: JavaScript and TypeScript lint
+        entry: pnpm lint
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: typecheck
+        name: TypeScript strict type check
+        entry: pnpm typecheck
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: yaml
+        name: YAML lint
+        entry: uv run --locked yamllint --strict .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: secrets
+        name: Repository secret scan
+        entry: uv run --locked python scripts/security.py
+        language: system
+        pass_filenames: false
+        always_run: true
