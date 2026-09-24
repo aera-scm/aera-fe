@@ -9,7 +9,8 @@ import type { Case } from './api/types.generated';
 import { source, referenceId } from './api/demo';
 import { useRealtime } from './api/realtime';
 import { Brand, Source, Status, Empty, Help, Chat, Heading } from './components';
-import { Workspace, Approvals, Metrics, Admin } from './pages';
+import { Workspace, Approvals, Metrics } from './pages';
+import { Admin } from './admin';
 import { logout } from './auth';
 
 export function App({ roles }: { roles: Role[] }) {

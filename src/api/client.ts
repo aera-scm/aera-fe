@@ -7,12 +7,20 @@ export type Role = 'planner' | 'approver' | 'admin';
 export const apiBase = import.meta.env.VITE_API_URL ?? '';
 
 export async function request<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+  return requestMethod<T>(body === undefined ? 'GET' : 'POST', path, body, signal);
+}
+
+export async function requestPut<T>(path: string, body: unknown): Promise<T> {
+  return requestMethod<T>('PUT', path, body);
+}
+
+async function requestMethod<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   if (!apiBase || !apiBase.startsWith('https://')) throw new Error('The live API is not configured. Please contact your administrator.');
   const session = await fetchAuthSession();
   const token = session.tokens?.idToken?.toString();
   if (!token) throw new Error('Please sign in again.');
   const response = await fetch(`${apiBase.replace(/\/$/, '')}${path}`, {
-    method: body === undefined ? 'GET' : 'POST', signal,
+    method, signal,
     headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
