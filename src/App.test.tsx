@@ -83,6 +83,24 @@ describe('WP-8 offline interactions', () => {
     expect(screen.getByRole('button', { name: 'Save demo settings' })).toBeEnabled();
     expect(fetch).not.toHaveBeenCalled();
   });
+  it('FR-UI-15 lets a judge choose bounded synthetic inputs without a scripted result', async () => {
+    mount('/lab/judge');
+    expect(await screen.findByText('Administrator access required')).toBeVisible();
+    await role('admin');
+    fireEvent.change(screen.getByLabelText('Exception type'), { target: { value: 'CARRIER_DELAY' } });
+    fireEvent.change(screen.getByLabelText('Material'), { target: { value: 'MAT-33871' } });
+    fireEvent.change(screen.getByLabelText('Delivery channel'), { target: { value: 'CARRIER' } });
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'ID' } });
+    fireEvent.click(screen.getByLabelText('Include a hostile message'));
+    const preview = screen.getByRole('button', { name: 'Preview synthetic inputs' });
+    fireEvent.click(preview);
+    expect(screen.getByText('Ready to test')).toBeVisible();
+    expect(screen.getByText(/CARRIER DELAY \/ MAT-33871/)).toBeVisible();
+    expect(screen.queryByText('RESOLVED')).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Change language' }));
+    expect(await screen.findByText('Pilih gangguan. Lihat respons AERA.')).toBeVisible();
+  });
   it('FR-RPT-03 labels demo metrics without claiming measured savings', async () => {
     mount('/metrics');
     expect(await screen.findByText('Measured outcomes need live runs')).toBeVisible();

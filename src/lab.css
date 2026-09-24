@@ -1,0 +1,43 @@
+.lab-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.lab-layout { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:22px; }
+.lab-card { padding:28px; border:1px solid var(--line); border-radius:18px;
+  background:linear-gradient(145deg, #fff 65%, #f2f7ff); box-shadow:0 18px 45px #1e4b8910; }
+.lab-card-top { display:flex; align-items:center; gap:10px; color:#3066ae;
+  font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  border-bottom:1px solid var(--line); padding-bottom:17px; margin-bottom:20px; }
+.lab-fields { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.lab-fields label { display:grid; gap:8px; color:#40576d; font-size:12px; font-weight:700; }
+.lab-fields label:nth-child(2), .lab-fields label:nth-child(3), .lab-fields .lab-check,
+.lab-numbers { grid-column:1 / -1; }
+.lab-fields select, .lab-fields input:not([type=checkbox]) { width:100%; min-width:0;
+  padding:12px 13px; border:1px solid #cbd9e7; border-radius:9px; background:#fff;
+  color:#173d50; font:inherit; }
+.lab-numbers { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.lab-fields .lab-check { display:flex; align-items:center; gap:10px; font-weight:600; }
+.lab-check input { width:19px; height:19px; accent-color:#216b7b; }
+.lab-launch { margin-top:24px; width:100%; justify-content:center; }
+.lab-card .fine-print { margin-top:13px; }
+.lab-result { min-height:520px; background:radial-gradient(circle at 85% 14%, #e3f2ef, transparent 38%),
+  linear-gradient(155deg, #fff, #eef4fc); }
+.lab-state { min-height:360px; display:flex; flex-direction:column; justify-content:center;
+  align-items:flex-start; gap:17px; }
+.lab-state > span { color:#227a83; letter-spacing:.15em; text-transform:uppercase;
+  font-size:11px; font-weight:800; }
+.lab-state h2 { font-size:clamp(28px, 3vw, 43px); line-height:1.13; max-width:480px; }
+.lab-state p { line-height:1.6; color:#587084; }
+.lab-history { margin-top:24px; }
+.lab-history h2 { font-size:18px; margin-bottom:16px; }
+.lab-history-row { width:100%; display:flex; justify-content:space-between; gap:15px;
+  padding:14px; border-bottom:1px solid var(--line); text-align:left; }
+.lab-history-row:hover { background:#f2f7fd; }
+.lab-history-row strong { color:#216b7b; }
+.lab-judge .lab-card { padding:34px; }
+.lab-judge .lab-fields label { font-size:15px; }
+.lab-judge .lab-fields select, .lab-judge .lab-fields input:not([type=checkbox]) {
+  min-height:53px; font-size:16px; }
+.lab-judge .lab-launch { min-height:57px; font-size:16px; }
+@media (max-width:900px) { .lab-layout { grid-template-columns:1fr; }
+  .lab-result { min-height:300px; } .lab-state { min-height:260px; } }
+@media (max-width:640px) { .lab-heading { align-items:flex-start; flex-direction:column; }
+  .lab-card, .lab-judge .lab-card { padding:20px; } .lab-fields { grid-template-columns:1fr; }
+  .lab-fields label { grid-column:1 / -1; } .lab-result { min-height:270px; } }

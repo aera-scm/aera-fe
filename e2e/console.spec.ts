@@ -57,3 +57,17 @@ test('FR-UI-13 projection and what-if remain readable without changing the plan'
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('projection.png'), fullPage: true });
 });
+
+test('FR-UI-15 judge mode fits viewport and labels synthetic preview', async ({ page }, testInfo) => {
+  await page.goto('/lab/judge');
+  await page.getByLabel('Demo role').selectOption('admin');
+  await expect(page.getByText('Choose a disruption. Watch AERA respond.')).toBeVisible();
+  await page.getByLabel('Exception type').selectOption('CARRIER_DELAY');
+  await page.getByLabel('Delivery channel').selectOption('CARRIER');
+  await page.getByRole('button', { name: 'Preview synthetic inputs' }).click();
+  await expect(page.getByText('Ready to test')).toBeVisible();
+  await expect(page.getByText('Preview only. No Mirror mutation or signal delivery.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath('lab-judge.png'), fullPage: true });
+});
