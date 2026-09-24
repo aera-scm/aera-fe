@@ -5,6 +5,7 @@ on:
   pull_request:
   workflow_dispatch:
 permissions:
+  # No OIDC or bundle deployment until an application build exists.
   contents: read
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}

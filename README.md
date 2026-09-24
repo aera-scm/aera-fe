@@ -55,3 +55,13 @@ tests and secret checks require no cloud account.
 API types are generated from the backend schemas and committed as `src/api/types.generated.ts`.
 
 Built for the AWS / SAP Agentic AI Hackathon, track: Intelligent Supply Chain.
+
+## Foundation deployment boundary
+
+CI remains read-only for pushes and pull requests (NFR-SEC-03/06). The backend
+owns the Cognito pool, public code-flow client, dev Hosted UI domain and private
+encrypted web bucket. Its optional OIDC deployment runs only after successful
+main-branch CI and a live budget check. There is no frontend deployment role or
+bundle upload while no application build exists. The future console must use
+PKCE S256 and the provisioned public client; dev callback/logout URLs currently
+use `http://localhost:5173/callback` and `http://localhost:5173/`.
