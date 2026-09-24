@@ -108,7 +108,7 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
         <Sparkles size={18}/>{busy ? tx('Starting...') : demoMode ? tx('Preview synthetic inputs') :
           tx('Run this disruption')}</button>
       <p className="fine-print">{demoMode ? tx('Preview only. No Mirror mutation or signal delivery.') :
-        tx('Signals enter the gate by internal replay; provider delivery awaits live setup.')}</p>
+        tx('Signal delivery mode appears with each run. Provider traffic needs live setup.')}</p>
     </section>
     <section className="lab-result lab-card"><div className="lab-card-top"><ShieldCheck size={22}/>
       <span>{tx('2 / Follow the outcome')}</span></div>
@@ -139,7 +139,8 @@ function RunResult({ run }: { run: LabRun }) {
     {run.caseId && <Link className="primary" to={`/cases/${run.caseId}/signal`}>
       {tx('Open case')} {run.caseId} <ArrowRight size={16}/></Link>}
     {run.parameters.hostile && <p>{tx('Hostile message')}: {run.hostileBlocked ?
-      tx('Blocked by gate') : tx('Awaiting gate result')}</p>}
+      tx('Blocked by gate') : run.outcome === 'HOSTILE_NOT_BLOCKED' ?
+        tx('Gate accepted hostile message') : tx('Awaiting gate result')}</p>}
     {run.timeToVerifiedSeconds !== undefined && <p>{tx('Time to verified plan')}:
       {' '}{run.timeToVerifiedSeconds.toFixed(1)} s</p>}
   </div>;
