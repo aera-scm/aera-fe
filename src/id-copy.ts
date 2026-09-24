@@ -288,6 +288,7 @@ export const idCopy: Record<string, string> = {
   'Measured outcomes need live runs': 'Hasil terukur memerlukan uji langsung',
   'Demo data is synthetic. No resolution, cost or savings claim is shown here.': 'Data demo bersifat sintetis. Tidak ada klaim penyelesaian, biaya, atau penghematan di sini.',
   'SCENARIO LAB': 'LAB SKENARIO',
+  'Synthetic Lab': 'Lab sintetis',
   'Choose a disruption. Watch AERA respond.': 'Pilih gangguan. Lihat respons AERA.',
   'Test a new disruption.': 'Uji gangguan baru.',
   'Open judge mode': 'Buka mode juri', 'Exit judge mode': 'Keluar dari mode juri',

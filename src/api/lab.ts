@@ -3,7 +3,7 @@ import { request } from './client';
 export type LabParameters = {
   exceptionType: 'SUPPLIER_DELAY' | 'QUANTITY_SHORTFALL' | 'CARRIER_DELAY';
   material: string;
-  plant: '1010';
+  plant: '1010' | '1020' | '1030';
   daysLate: number;
   quantityShort: number;
   channel: 'EMAIL' | 'WHATSAPP' | 'CARRIER';

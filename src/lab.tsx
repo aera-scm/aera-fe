@@ -79,8 +79,11 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
             setParams({ ...params, material, quantityShort: Math.min(params.quantityShort, cap) }); }}>
           {materials.map(([id, name]) => <option key={id} value={id}>{name} / {id}</option>)}
         </select></label>
-        <label>{tx('Plant')}<select aria-label={tx('Plant')} value="1010" disabled>
-          <option value="1010">1010 / Cikarang</option></select></label>
+        <label>{tx('Plant')}<select aria-label={tx('Plant')} value={params.plant}
+          onChange={event => setParams({ ...params, plant: event.target.value as LabParameters['plant'] })}>
+          <option value="1010">1010 / Cikarang</option>
+          <option value="1020">1020 / {tx('Synthetic Lab')}</option>
+          <option value="1030">1030 / {tx('Synthetic Lab')}</option></select></label>
         <div className="lab-numbers">
           <label>{tx('Days late')}<input aria-label={tx('Days late')} type="number" min="1" max="7"
             value={params.daysLate} onChange={event => setParams({ ...params,
