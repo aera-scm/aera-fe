@@ -4,21 +4,49 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.5.1",
-  "engines": { "node": "24.21.0", "pnpm": "12.5.1" },
+  "engines": {
+    "node": "24.21.0",
+    "pnpm": "12.5.1"
+  },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
     "scan": "uv run --locked python scripts/security.py",
     "audit:dependencies": "pnpm audit --audit-level low",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm scan && pnpm audit:dependencies"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm scan && pnpm audit:dependencies",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
     "@types/node": "24.13.6",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.1.1",
     "eslint": "10.11.0",
+    "jsdom": "30.1.1",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.1",
+    "vite": "8.3.0",
     "vitest": "5.0.1"
+  },
+  "dependencies": {
+    "@cloudscape-design/components": "3.0.1383",
+    "@cloudscape-design/global-styles": "1.0.70",
+    "@tanstack/react-query": "5.103.2",
+    "aws-amplify": "6.22.0",
+    "i18next": "26.4.2",
+    "lucide-react": "1.47.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-i18next": "17.0.15",
+    "react-router-dom": "7.18.4",
+    "recharts": "3.10.1"
   }
 }

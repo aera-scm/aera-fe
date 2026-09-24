@@ -17,6 +17,8 @@ dist/
 build/
 .vite/
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
 *.log
 .DS_Store

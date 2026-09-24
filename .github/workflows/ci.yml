@@ -33,6 +33,11 @@ jobs:
           uv sync --locked
       - name: Lint, strict types, tests, secrets and JavaScript dependency audit
         run: pnpm check
+      - name: Build console and verify offline browser interactions
+        run: |
+          pnpm build
+          pnpm exec playwright install --with-deps chromium
+          pnpm test:e2e
       - name: Validate YAML and audit Python security tools
         run: |
           uv run --locked yamllint --strict .

@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   },
-  "include": ["scripts/**/*.mjs", "eslint.config.mjs", "src/**/*.ts", "src/**/*.tsx"]
+  "include": ["scripts/**/*.mjs", "eslint.config.mjs", "src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "playwright.config.ts", "e2e/**/*.ts"]
 }

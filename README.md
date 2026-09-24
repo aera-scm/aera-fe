@@ -34,11 +34,41 @@ uv run --locked pre-commit run --all-files
 These commands work on Windows and Linux. Keep existing Git hooks: run pre-commit
 explicitly rather than replacing an existing `core.hooksPath`.
 
-ESLint and strict TypeScript currently check the tooling scripts. `pnpm test`
-explicitly reports that there are no application tests; when test files are added,
-Vitest runs and failures or empty collection fail the command. No console screens,
-dev server or application build exist yet. React and application dependencies will
-be introduced with their implementing work package.
+Run `pnpm dev` for the explicitly labelled synthetic demo and `pnpm build` for
+the production bundle. Demo decisions, field confirmations and settings stay local
+and never execute SAP writes. Refreshing the page resets them.
+
+`pnpm test` runs API boundary, trace/reconnect and console interaction tests.
+`pnpm test:e2e` checks offline navigation and approval at 1366x768, 1920x1080
+and 375x812. First install Chromium with `pnpm exec playwright install chromium`.
+To use installed Edge locally, set `E2E_BROWSER_CHANNEL=msedge`. Browser artifacts
+remain ignored under `test-results/`. These tests do not establish live acceptance.
+
+The board, six-stage reference workspace, explicit demo approval/rejection, trace,
+chat guide and local admin controls are implemented. Projection, portfolio and
+Scenario Lab remain future screens; insights currently show case counts only.
+English/Indonesian shell labels exist; full content translation is not complete.
+
+## Live configuration and boundaries
+
+Set public Vite build variables in the build environment (never secret values):
+
+- `VITE_DATA_MODE=live`
+- `VITE_API_URL`: HTTPS console API base URL
+- `VITE_WS_URL`: optional secure WebSocket URL
+- `VITE_USER_POOL_ID`, `VITE_USER_POOL_CLIENT_ID`, `VITE_COGNITO_DOMAIN`
+
+Unset mode defaults to the labelled demo; only explicit `demo` also enables it.
+Other mode values fail closed through the live configuration path. Live API
+failures never substitute fixtures. Auth uses the Cognito public code-flow client.
+Register callback and logout URLs for the exact browser origin, including host
+and port; the console uses `/callback` and `/` respectively.
+
+Live integration currently reads cases and traces. A one-use ticket connects the
+board or selected case subscription; disconnects enable two-second polling, and
+reconnect refreshes cached data. Detailed plan views, guarded chat, approval,
+workflow/rollback, admin writes and live end-to-end acceptance remain backend/dev
+integration work. Demo role controls are not server authorization.
 
 `pnpm-lock.yaml` and `uv.lock` pin direct and transitive tooling dependencies
 (NFR-SEC-06). CI runs lint, strict type checks, available tests, YAML validation,
@@ -62,6 +92,6 @@ CI remains read-only for pushes and pull requests (NFR-SEC-03/06). The backend
 owns the Cognito pool, public code-flow client, dev Hosted UI domain and private
 encrypted web bucket. Its optional OIDC deployment runs only after successful
 main-branch CI and a live budget check. There is no frontend deployment role or
-bundle upload while no application build exists. The future console must use
+bundle upload configured yet. The console must use
 PKCE S256 and the provisioned public client; dev callback/logout URLs currently
 use `http://localhost:5173/callback` and `http://localhost:5173/`.
