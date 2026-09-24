@@ -4,7 +4,7 @@ import { MessageSquareText } from 'lucide-react';
 import { dialogue } from './api/dialogue';
 
 export function DialogueThread({ caseId }: { caseId: string }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const thread = useQuery({
     queryKey: ['dialogue', caseId],
     queryFn: ({ signal }) => dialogue(caseId, signal),
@@ -18,7 +18,10 @@ export function DialogueThread({ caseId }: { caseId: string }) {
     {thread.data?.map(message => <article className="dialogue-entry" key={message.messageId}>
       <div className="panel-top"><strong>{t(message.templateId)}</strong><span className="badge blue">{t(message.status)}</span></div>
       <p className="fine-print">{t('language')}: {message.language} | {message.sentAt ?? message.createdAt ?? ''}</p>
-      <p className="dialogue-text">{i18n.language === 'en' ? message.englishCopy : message.renderedText}</p>
+      <div className="dialogue-copies">
+        <div><small>{t('originalMessage')}</small><p className="dialogue-text">{message.renderedText}</p></div>
+        <div><small>{t('englishCopy')}</small><p className="dialogue-text">{message.englishCopy}</p></div>
+      </div>
       {message.reminderSent && <p className="fine-print">{t('oneReminderSent')}</p>}
       {message.reply && <blockquote><strong>{t('supplierReply')}</strong><p>{message.reply.text}</p>
         <small>{t('untrustedSupplierText')}</small></blockquote>}
