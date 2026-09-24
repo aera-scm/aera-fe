@@ -83,6 +83,13 @@ describe('WP-8 offline interactions', () => {
     expect(screen.getByRole('button', { name: 'Save demo settings' })).toBeEnabled();
     expect(fetch).not.toHaveBeenCalled();
   });
+  it('FR-RPT-03 labels demo metrics without claiming measured savings', async () => {
+    mount('/metrics');
+    expect(await screen.findByText('Measured outcomes need live runs')).toBeVisible();
+    expect(screen.getByText(/Demo data is synthetic/)).toBeVisible();
+    expect(screen.queryByText('Optimiser savings')).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it('FR-CHT-03 demo chat cannot approve or execute', async () => {
     mount('/cases/' + referenceId + '/approve');
     fireEvent.click(await screen.findByRole('button', { name: 'Ask AERA' }));

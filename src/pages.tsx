@@ -8,6 +8,7 @@ import Modal from '@cloudscape-design/components/modal';
 import Button from '@cloudscape-design/components/button';
 import Checkbox from '@cloudscape-design/components/checkbox';
 import { demoMode, trace, traceTitle, type Role } from './api/client';
+import { metrics, type Measure } from './api/metrics';
 import type { Case } from './api/types.generated';
 import { optionCards, referenceId, source } from './api/demo';
 import { Empty, Heading, Source, Status, Notice } from './components';
@@ -61,9 +62,46 @@ export function Approvals({ rows, canApprove }: { rows: Case[]; canApprove: bool
 }
 
 export function Metrics({ rows }: { rows: Case[] }) {
-  return <><Heading eyebrow={tx("OPERATIONAL INSIGHTS")} title={tx("Progress you can trace.")}/><p className="page-description">{tx("A clear view of the work in front of you. Results appear when they are measured.")}</p><div className="metric-triplet panel"><Metric label={tx("Visible cases")} value={String(rows.length)} sourceRef="console:cases/count"/><Metric label={tx("Awaiting approval")} value={String(rows.filter(row => row.status === 'AWAITING_APPROVAL').length)} sourceRef="console:cases/status=AWAITING_APPROVAL"/><Metric label={tx("Closed cases")} value={String(rows.filter(row => row.status === 'CLOSED').length)} sourceRef="console:cases/status=CLOSED"/></div><div className="insight-grid"><article className="panel"><h3>{tx("Where work stands")}</h3>{['RECEIVED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'].map(status => { const count = rows.filter(row => row.status === status).length; return <div className="bar-row" key={status}><span>{status.replaceAll('_', ' ').toLowerCase()}</span><div className="bar-track"><div style={{ width: `${rows.length ? count / rows.length * 100 : 0}%` }}/></div><Source sourceRef={`console:cases/status=${status}`}>{count}</Source></div>; })}</article><article className="panel"><Empty title={tx("Measured outcomes, coming with live runs")}>{tx("Resolution time, model cost, human touches and revenue protected require completed backend runs. No performance uplift is claimed from demo data.")}</Empty></article></div></>;
+  const query = useQuery({ queryKey: ['metrics'], queryFn: ({ signal }) => metrics(signal), enabled: !demoMode, refetchInterval: 10000 });
+  const kpis = query.data;
+  const cards = kpis ? [
+    [tx('Revenue protected'), kpis.revenueProtected],
+    [tx('Resolution median'), kpis.resolutionMedian],
+    [tx('Resolution p95'), kpis.resolutionP95],
+    [tx('Touchless rate'), kpis.touchlessRate],
+    [tx('Approvals requested'), kpis.approvalsRequested],
+    [tx('Approvals avoided'), kpis.approvalsAvoided],
+    [tx('Blocked signals'), kpis.blockedSignals],
+    [tx('Model cost per case'), kpis.costPerCase],
+    [tx('Optimiser savings'), kpis.optimiserSavings],
+  ] as const : [];
+  return <>
+    <Heading eyebrow={tx('OPERATIONAL INSIGHTS')} title={tx('Progress you can trace.')}/>
+    <p className="page-description">{kpis ? `${tx('Measured on')} ${tx(kpis.basis)}.` : tx('A clear view of the work in front of you. Results appear when they are measured.')}</p>
+    <div className="metric-triplet panel">
+      <Metric label={tx('Visible cases')} value={String(rows.length)} sourceRef="console:cases/count"/>
+      <Metric label={tx('Awaiting approval')} value={String(rows.filter(row => row.status === 'AWAITING_APPROVAL').length)} sourceRef="console:cases/status=AWAITING_APPROVAL"/>
+      <Metric label={tx('Closed cases')} value={String(rows.filter(row => row.status === 'CLOSED').length)} sourceRef="console:cases/status=CLOSED"/>
+    </div>
+    {query.isError && <p role="alert">{query.error.message}</p>}
+    {query.isPending && !demoMode && <p role="status">{tx('Loading measured outcomes')}</p>}
+    {kpis && <div className="insight-grid">{cards.map(([label, measure]) => <article className="panel" key={label}>
+      <Metric label={label} value={formatMeasure(measure)} sourceRef={measure.sourceRef}/>
+      <p className="fine-print">{measure.value === null ? tx('Awaiting measured data') : `${tx('Sample')}: ${measure.sampleSize}`}</p>
+    </article>)}</div>}
+    {demoMode && <article className="panel"><Empty title={tx('Measured outcomes need live runs')}>{tx('Demo data is synthetic. No resolution, cost or savings claim is shown here.')}</Empty></article>}
+  </>;
 }
 
+function formatMeasure(measure: Measure): string {
+  if (measure.value === null) return '—';
+  const value = Number(measure.value);
+  if (!Number.isFinite(value)) return '—';
+  if (measure.unit === 'USD') return money(value);
+  if (measure.unit === 'ratio') return `${(value * 100).toFixed(1)}%`;
+  if (measure.unit === 'minutes') return `${value.toFixed(1)} min`;
+  return String(value);
+}
 export function Admin({ role }: { role: Role }) {
   const [kill, setKill] = useState(false);
   const [limit, setLimit] = useState('25000');
