@@ -1,0 +1,34 @@
+.projection-panel { margin-top: 20px; }
+.projection-panel .panel-top { align-items: flex-start; }
+.projection-panel .panel-top p { font-size: 11px; margin-top: 6px; }
+.projection-controls { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin: 22px 0 12px; }
+.projection-controls label, .whatif-editor label { display: flex; flex-direction: column; gap: 7px; color: #697d9a; font-size: 10px; font-weight: 600; }
+.projection-controls select, .whatif-editor input { border: 1px solid #d9e4f1; background: #fbfdff; border-radius: 8px; padding: 9px 10px; min-height: 37px; }
+.projection-range { display: flex; padding: 3px; background: #edf3fc; border-radius: 9px; margin-left: auto; }
+.projection-range button { padding: 7px 10px; color: #647997; font-size: 10px; border-radius: 7px; }
+.projection-range button.selected { background: #fff; color: #235caf; box-shadow: 0 1px 5px #30598218; }
+.projection-chart { width: 100%; min-width: 0; margin: 8px 0 4px; }
+.projection-tooltip { max-width: 260px; background: #fff; border: 1px solid #dce6f3; border-radius: 8px; padding: 10px; color: #3d5679; box-shadow: 0 7px 20px #1b396022; font-size: 10px; }
+.projection-tooltip strong { display: block; margin-bottom: 7px; }
+.projection-tooltip div { margin-top: 7px; }
+.projection-tooltip small { display: block; color: #778ba7; overflow-wrap: anywhere; line-height: 1.5; }
+.projection-legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 10px; color: #6f809a; }
+.projection-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.projection-legend i { display: inline-block; width: 18px; height: 3px; border-radius: 3px; }
+.projection-legend .baseline-line { background: #9cabc0; }
+.projection-legend .projected-line { background: #286ed1; }
+.projection-legend .stop-swatch { background: #eecfae; height: 9px; width: 11px; }
+.projection-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin: 21px 0; }
+.projection-facts > span { border: 1px solid #e5ecf5; border-radius: 9px; padding: 12px; color: #7a8ba4; font-size: 10px; min-width: 0; }
+.projection-facts .sourced { display: block; color: #273f64; font-size: 12px; font-weight: 600; margin-top: 6px; overflow-wrap: anywhere; }
+.whatif-editor { display: grid; grid-template-columns: minmax(170px, 1fr) 85px 100px auto; align-items: end; gap: 12px; background: #f3f7fd; border: 1px solid #e5edf8; border-radius: 10px; padding: 16px; }
+.whatif-editor h4 { font: 650 12px Manrope, sans-serif; margin: 0 0 4px; }
+.whatif-editor p { font-size: 10px; color: #7789a3; }
+.whatif-editor input { width: 100%; }
+.whatif-result { margin-top: 15px; }
+.whatif-result ul { margin: 0; padding-left: 20px; font-size: 11px; color: #657892; columns: 2; }
+.whatif-result li { margin: 6px 0; break-inside: avoid; }
+.projection-panel > .fine-print { margin-top: 16px; overflow-wrap: anywhere; }
+.projection-panel > .fine-print .sourced { display: inline-block; margin: 2px 7px 2px 0; }
+@media (max-width: 800px) { .whatif-editor { grid-template-columns: 1fr 1fr; } .whatif-editor > div { grid-column: 1 / -1; } .projection-facts { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .projection-range { margin-left: 0; } .whatif-editor { grid-template-columns: 1fr; } .whatif-editor > div { grid-column: auto; } .whatif-result ul { columns: 1; } }

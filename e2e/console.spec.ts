@@ -44,3 +44,16 @@ test('FR-UI-03 all six stages remain reachable', async ({ page }) => {
   }
   await expect(page.getByText('Workflow preview only. No live workflow or SAP document has been created.')).toBeVisible();
 });
+
+test('FR-UI-13 projection and what-if remain readable without changing the plan', async ({ page }, testInfo) => {
+  await page.goto('/cases/' + referenceId + '/options');
+  const panel = page.getByRole('article', { name: 'Stock projection' });
+  await expect(panel.getByRole('img', { name: /Stock projection for plant 1010/ })).toBeVisible();
+  await expect(panel.getByText('Synthetic projection')).toBeVisible();
+  await panel.getByLabel('What-if quantity').fill('400');
+  await panel.getByRole('button', { name: 'Run what-if' }).click();
+  await expect(panel.getByText('What-if only. Plan version 1 remains unchanged.')).toBeVisible();
+  await expect(panel.getByText('Synthetic projection only. Verifier checks require a connected workspace.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('projection.png'), fullPage: true });
+});
