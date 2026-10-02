@@ -62,7 +62,7 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
       {!judge && <Link className="secondary" to="/lab/judge">{tx('Open judge mode')} <ArrowRight size={16}/></Link>}
       {judge && <Link className="secondary" to="/lab">{tx('Exit judge mode')}</Link>}
     </div>
-    <p className="page-description">{tx('Synthetic SAP Mirror scenario. Choose inputs; no outcome is scripted.')}</p>
+    <p className="page-description">{tx('Choose a disruption and review its inputs and outcome.')}</p>
     {error && <Notice close={() => setError('')}>{error}</Notice>}
     <div className="lab-layout"><section className="lab-card">
       <div className="lab-card-top"><Beaker size={22}/><span>{tx('1 / Shape the exception')}</span></div>
@@ -82,8 +82,8 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
         <label>{tx('Plant')}<select aria-label={tx('Plant')} value={params.plant}
           onChange={event => setParams({ ...params, plant: event.target.value as LabParameters['plant'] })}>
           <option value="1010">1010 / Cikarang</option>
-          <option value="1020">1020 / {tx('Synthetic Lab')}</option>
-          <option value="1030">1030 / {tx('Synthetic Lab')}</option></select></label>
+          <option value="1020">1020 / {tx('Scenario Lab')}</option>
+          <option value="1030">1030 / {tx('Scenario Lab')}</option></select></label>
         <div className="lab-numbers">
           <label>{tx('Days late')}<input aria-label={tx('Days late')} type="number" min="1" max="7"
             value={params.daysLate} onChange={event => setParams({ ...params,
@@ -101,21 +101,21 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
         </select></label>
         <label>{tx('Language')}<select aria-label={tx('Language')} value={params.language}
           onChange={event => setParams({ ...params, language: event.target.value as LabParameters['language'] })}>
-          <option value="EN">English</option><option value="ID">Bahasa Indonesia</option>
-          <option value="DE">Deutsch</option></select></label>
+          <option value="EN">English</option><option value="ID">Indonesian</option>
+          <option value="DE">German</option></select></label>
         <label className="lab-check"><input type="checkbox" checked={params.hostile}
           onChange={event => setParams({ ...params, hostile: event.target.checked })}/>
           <span>{tx('Include a hostile message')}</span></label>
       </div>
       <button className="primary lab-launch" disabled={busy || !valid} onClick={() => { void launch(); }}>
-        <Sparkles size={18}/>{busy ? tx('Starting...') : demoMode ? tx('Preview synthetic inputs') :
+        <Sparkles size={18}/>{busy ? tx('Starting...') : demoMode ? tx('Preview inputs') :
           tx('Run this disruption')}</button>
       <p className="fine-print">{demoMode ? tx('Preview only. No Mirror mutation or signal delivery.') :
         tx('Signal delivery mode appears with each run. Provider traffic needs live setup.')}</p>
     </section>
     <section className="lab-result lab-card"><div className="lab-card-top"><ShieldCheck size={22}/>
       <span>{tx('2 / Follow the outcome')}</span></div>
-      {demoMode && preview ? <div className="lab-state"><span>{tx('Synthetic preview')}</span>
+      {demoMode && preview ? <div className="lab-state"><span>{tx('Input preview')}</span>
         <h2>{tx('Ready to test')}</h2><p>{params.exceptionType.replaceAll('_', ' ')} / {params.material}
           / {params.daysLate} {tx('days late')} / {params.quantityShort} {tx('units short')}</p>
         <p>{tx('Connected mode will mutate the Mirror and submit a gated signal.')}</p></div> :
@@ -125,7 +125,7 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
         <p>{tx('Case progress, hostile-message result and audit timing appear here.')}</p></div>}
       {active.isError && <p role="alert">{tx('Run status unavailable. Retry from run history.')}</p>}
     </section></div>
-    {!judge && !demoMode && <section className="panel lab-history"><h2>{tx('Previous synthetic runs')}</h2>
+    {!judge && !demoMode && <section className="panel lab-history"><h2>{tx('Previous runs')}</h2>
       {history.data?.length ? history.data.map(run => <button key={run.runId}
         onClick={() => setRunId(run.runId)} className="lab-history-row">
         <span>{run.parameters.material} / {run.parameters.exceptionType.replaceAll('_', ' ')}</span>
@@ -136,7 +136,7 @@ export function ScenarioLab({ role, judge = false }: { role: Role; judge?: boole
 }
 
 function RunResult({ run }: { run: LabRun }) {
-  return <div className="lab-state"><span>{tx('Synthetic run')} / {run.deliveryMode}</span>
+  return <div className="lab-state"><span>{tx('Scenario run')} / {run.deliveryMode}</span>
     <h2>{run.outcome.replaceAll('_', ' ')}</h2>
     <p>{run.parameters.material} / {run.parameters.exceptionType.replaceAll('_', ' ')}</p>
     {run.caseId && <Link className="primary" to={`/cases/${run.caseId}/signal`}>
