@@ -7,6 +7,15 @@ import './i18n';
 import './styles.css';
 import { AuthGate } from './auth';
 import { App } from './App';
+import type { Role } from './api/client';
 
-const query = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={query}><BrowserRouter><AuthGate>{roles => <App roles={roles}/>}</AuthGate></BrowserRouter></QueryClientProvider></React.StrictMode>);
+function SessionWorkspace({ roles }: { roles: Role[] }) {
+  const [query] = React.useState(() => new QueryClient({
+    defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+  }));
+  React.useEffect(() => () => query.clear(), [query]);
+  return <QueryClientProvider client={query}><App roles={roles}/></QueryClientProvider>;
+}
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode><BrowserRouter><AuthGate>{roles => <SessionWorkspace roles={roles}/>}</AuthGate></BrowserRouter></React.StrictMode>,
+);
