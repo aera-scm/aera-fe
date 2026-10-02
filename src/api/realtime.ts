@@ -14,6 +14,10 @@ export function useRealtime(caseId?: string) {
     function refresh() {
       void query.invalidateQueries({ queryKey: ['cases'] });
       void query.invalidateQueries({ queryKey: ['trace'] });
+      void query.invalidateQueries({ queryKey: ['case'] });
+      void query.invalidateQueries({ queryKey: ['signals'] });
+      void query.invalidateQueries({ queryKey: ['dialogue'] });
+      void query.invalidateQueries({ queryKey: ['metrics'] });
     }
     function retry() {
       if (!disposed) timer = setTimeout(() => { void connect(); }, 5000);

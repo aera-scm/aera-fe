@@ -85,3 +85,10 @@ describe('FR-UI-03 generated trace contract', () => {
     await expect((await import('./client')).request('/test', {})).rejects.toThrow('Refresh and review');
   });
 });
+
+it.each([{ rarUsd: '4720000' }, { priorityScore: {} }, { figures: {} }, { tier: 8 }])(
+  'FR-UI-01 rejects case fields unsafe for display: %j', async change => {
+    respond([{ ...demoCases[0], ...change }]);
+    await expect((await import('./client')).cases()).rejects.toThrow('not compatible');
+  },
+);

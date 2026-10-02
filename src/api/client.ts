@@ -36,7 +36,18 @@ async function requestMethod<T>(method: 'GET' | 'POST' | 'PUT', path: string, bo
 export function isCase(value: unknown): value is Case {
   if (!value || typeof value !== 'object') return false;
   const row = value as Partial<Case>;
-  return typeof row.caseId === 'string' && typeof row.material === 'string' && typeof row.plant === 'string' && typeof row.status === 'string' && ['SIGNAL', 'TRIAGE', 'IMPACT', 'OPTIONS', 'APPROVE', 'EXECUTE'].includes(row.stage ?? '');
+  const numeric = [row.rarUsd, row.priorityScore, row.confidence, row.daysLate];
+  return typeof row.caseId === 'string' && /^EXC-\d{4}-\d{4,}$/.test(row.caseId)
+    && typeof row.material === 'string' && typeof row.plant === 'string'
+    && typeof row.status === 'string'
+    && ['SIGNAL', 'TRIAGE', 'IMPACT', 'OPTIONS', 'APPROVE', 'EXECUTE'].includes(row.stage ?? '')
+    && numeric.every(item => item == null || typeof item === 'number' && Number.isFinite(item))
+    && (row.tier == null || [1, 2, 3].includes(row.tier))
+    && (row.figures === undefined || Array.isArray(row.figures) && row.figures.every(figure =>
+      figure && typeof figure.name === 'string' && typeof figure.sourceRef === 'string' &&
+      (typeof figure.value === 'string' || typeof figure.value === 'number' && Number.isFinite(figure.value))))
+    && (row.materialDescription == null || typeof row.materialDescription === 'string')
+    && (row.poNumber == null || typeof row.poNumber === 'string');
 }
 export async function cases(signal?: AbortSignal): Promise<Case[]> {
   if (demoMode) return structuredClone(demoCases);

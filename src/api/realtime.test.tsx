@@ -63,6 +63,8 @@ it('FR-UI-03 subscribes to selected case and closes old subscription on navigati
   expect(first.send).toHaveBeenCalledWith(JSON.stringify({ action: 'subscribe', caseId: 'EXC-2026-0914' }));
   act(() => first.onmessage?.());
   expect(hook.invalidate).toHaveBeenCalledWith({ queryKey: ['trace'] });
+  expect(hook.invalidate).toHaveBeenCalledWith({ queryKey: ['case'] });
+  expect(hook.invalidate).toHaveBeenCalledWith({ queryKey: ['signals'] });
   hook.rerender({ target: 'EXC-2026-0915' });
   await act(async () => { await Promise.resolve(); });
   expect(first.close).toHaveBeenCalledOnce();
