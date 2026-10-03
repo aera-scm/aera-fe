@@ -44,6 +44,15 @@ and 375x812. First install Chromium with `pnpm exec playwright install chromium`
 To use installed Edge locally, set `E2E_BROWSER_CHANNEL=msedge`. Browser artifacts
 remain ignored under `test-results/`. These tests do not establish live acceptance.
 
+`pnpm test:e2e:live` runs the reference scenario against a deployed environment
+(`playwright.live.config.ts`, `e2e-live/`). Start the console in live mode on its
+registered callback origin, reset the environment and replay the signals first. Sign
+in once and save the browser state to a file outside the repository, for example
+`pnpm exec playwright open --save-storage=<path> http://localhost:5173`, then set
+`E2E_PLANNER_STATE=<path>` (and optionally `E2E_APPROVER_STATE`). The test confirms
+the photographed quantity, checks options, plan parts and time left, waits for the
+approver's decision and then checks the executed plan.
+
 The board, six-stage reference workspace, explicit demo approval/rejection, trace,
 chat guide and local admin controls are implemented. Projection, portfolio and
 Scenario Lab remain future screens; insights currently show case counts only.
