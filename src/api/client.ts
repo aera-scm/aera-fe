@@ -26,13 +26,32 @@ async function requestMethod<T>(method: 'GET' | 'POST' | 'PUT', path: string, bo
   });
   if (!response.ok) {
     // Server bodies may contain untrusted data. Report status without echoing them.
-    if (response.status === 409 || response.status === 412) throw new Error('This case changed. Refresh and review the latest plan before continuing.');
-    if (response.status === 403) throw new Error('Your role is not permitted to perform this action.');
-    throw new Error(`The request could not be completed (${response.status}). Please retry.`);
+    if (response.status === 409 || response.status === 412) throw new ApiError(response.status, 'This case changed. Refresh and review the latest plan before continuing.', await conflict(response));
+    if (response.status === 403) throw new ApiError(403, 'Your role is not permitted to perform this action.');
+    throw new ApiError(response.status, `The request could not be completed (${response.status}). Please retry.`);
   }
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
 
+/** Error with the HTTP status and, for a refused approval, only the current plan identity (AT-16). */
+export class ApiError extends Error {
+  readonly currentPlanVersion?: number;
+  readonly currentPlanVersionHash?: string;
+  constructor(readonly status: number, message: string, current: { currentPlanVersion?: number; currentPlanVersionHash?: string } = {}) {
+    super(message);
+    this.currentPlanVersion = current.currentPlanVersion;
+    this.currentPlanVersionHash = current.currentPlanVersionHash;
+  }
+}
+async function conflict(response: Response) {
+  const body: unknown = await response.json().catch(() => null);
+  if (!body || typeof body !== 'object') return {};
+  const { currentPlanVersion: version, currentPlanVersionHash: hash } = body as Record<string, unknown>;
+  return {
+    currentPlanVersion: Number.isInteger(version) ? version as number : undefined,
+    currentPlanVersionHash: typeof hash === 'string' && /^[0-9a-f]{64}$/.test(hash) ? hash : undefined,
+  };
+}
 export function isCase(value: unknown): value is Case {
   if (!value || typeof value !== 'object') return false;
   const row = value as Partial<Case>;

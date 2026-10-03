@@ -281,3 +281,28 @@ html { scroll-padding-bottom: 100px; }
 @media (max-width: 640px) {
   .app .footer { padding-inline: 18px; flex-direction: column; align-items: flex-start; gap: 2px; }
 }
+/* Live plan evidence: options, checks, plan parts, undo and execution (FR-UI-07, FR-UI-08, FR-UI-10) */
+.live-workspace .option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 16px 0; }
+.live-workspace .option-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; background: #fff; min-width: 0; overflow-wrap: anywhere; }
+.live-workspace .check-list, .live-workspace .undo-list, .live-workspace .source-list, .live-workspace .milestone-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.live-workspace .check-list li, .live-workspace .undo-list li { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 10px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); font-size: 0.875rem; overflow-wrap: anywhere; }
+.live-workspace .undo-list li { grid-template-columns: minmax(120px, auto) 1fr; }
+.live-workspace .check-list .check-state { font-weight: 600; }
+.live-workspace .check-list .pass .check-state, .live-workspace .undo-list .pass strong { color: #338269; }
+.live-workspace .check-list .fail .check-state { color: #bc626b; }
+.live-workspace .check-list .flag .check-state, .live-workspace .undo-list .flag strong { color: #a77424; }
+.live-workspace .source-list li, .live-workspace .milestone-list li { padding: 6px 0; font-size: 0.875rem; overflow-wrap: anywhere; }
+.live-workspace .milestone-list time { color: #65768f; margin-left: 6px; }
+.live-workspace .plan-part h4, .live-workspace .approval-summary + .plan-part { margin-top: 14px; }
+.live-workspace .time-left { font-weight: 600; }
+.live-workspace .time-left.late { color: #bc626b; }
+.live-workspace .workflow-list li { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--line); list-style: none; }
+.live-workspace .workflow-list li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.live-workspace .approval-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 6px; }
+@media (max-width: 640px) {
+  .live-workspace .check-list li { grid-template-columns: auto 1fr; }
+  .live-workspace .check-list li > span:last-child { grid-column: 1 / -1; }
+  .live-workspace .undo-list li { grid-template-columns: 1fr; }
+  .live-workspace .approval-actions { flex-direction: column-reverse; }
+  .live-workspace .approval-actions button { width: 100%; }
+}
