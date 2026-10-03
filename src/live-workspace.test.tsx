@@ -32,17 +32,18 @@ let row: Case;
 let signal: Signal;
 let postStatus: number;
 let evidence: ReturnType<typeof planEvidence> | null;
+let conflictHash: string;
 let query: QueryClient;
 let decide: ReturnType<typeof vi.fn<(value: 'APPROVED' | 'REJECTED' | null) => void>>;
 function posts() { return vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'POST'); }
 beforeEach(() => {
-  row = structuredClone(initial); signal = structuredClone(initialSignal); postStatus = 200; evidence = null;
+  row = structuredClone(initial); signal = structuredClone(initialSignal); postStatus = 200; evidence = null; conflictHash = 'c'.repeat(64);
   decide = vi.fn<(value: 'APPROVED' | 'REJECTED' | null) => void>();
   auth.session.mockResolvedValue({ tokens: { idToken: { toString: () => 'test-session' } } });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = new URL(String(input)).pathname;
     if (init?.method === 'POST') {
-      if (postStatus === 409 && path.endsWith('/approval')) return new Response(JSON.stringify({ title: 'Decision refused', status: 409, currentPlanVersion: 1, currentPlanVersionHash: planHash }), { status: 409 });
+      if (postStatus === 409 && path.endsWith('/approval')) return new Response(JSON.stringify({ title: 'Decision refused', status: 409, currentPlanVersion: 1, currentPlanVersionHash: conflictHash }), { status: 409 });
       if (postStatus !== 200) return new Response('{}', { status: postStatus });
       if (path.endsWith('/approval')) return new Response(JSON.stringify({ decision: JSON.parse(init.body as string).decision, planPartId: 'part-air', caseId: id }));
       if (path.endsWith('/confirm')) {
@@ -133,6 +134,9 @@ it('FR-UI-07 shows option cards with sourced figures, check reasons and the chos
   expect(screen.getByText('600 PC')).toHaveAttribute('data-source-ref', 'SAP:stock/1020');
   expect(screen.getByText('4,100 USD')).toHaveAttribute('data-source-ref', 'ratecard:STO-1');
   expect(screen.getByText('Chosen plan: C + A')).toBeVisible();
+  expect(screen.getByText('600 units')).toHaveAttribute('data-source-ref', `api:/cases/${id}/plan/options/C/coverageUnits`);
+  expect(screen.getByText('2026-11-01T13:00:00Z')).toHaveAttribute('data-source-ref', `api:/cases/${id}/plan/options/C/arrival`);
+  expect(screen.getAllByText('1240 units').map(item => item.getAttribute('data-source-ref'))).toEqual([`api:/cases/${id}/plan/coverageUnits`, `api:/cases/${id}/plan/options/B/coverageUnits`]);
   expect(screen.getByText('0.91')).toHaveAttribute('data-source-ref', `api:/cases/${id}/plan/confidence`);
   expect(screen.getByText(/consistent/i)).toBeVisible();
   expect(posts()).toHaveLength(0);
@@ -162,6 +166,8 @@ it('FR-UI-08 approve needs an explicit confirm and posts only decision, comment 
   fireEvent.click(await screen.findByRole('button', { name: 'Review & approve' }));
   const dialog = within(screen.getByRole('dialog', { name: 'Confirm approval' }));
   expect(dialog.getByText('Not reversible once booked; the freight cost stays.')).toBeVisible();
+  expect(dialog.getByText('38,200 USD')).toHaveAttribute('data-source-ref', 'ratecard:AIR-1');
+  expect(dialog.getByText('125 USD')).toHaveAttribute('data-source-ref', `api:/cases/${id}/case/rarUsd`);
   const submit = dialog.getByRole('button', { name: 'Approve plan part' });
   expect(submit).toBeDisabled();
   fireEvent.click(dialog.getByRole('checkbox'));
@@ -187,7 +193,9 @@ it('FR-RTE-03 rejection requires a reason', async () => {
 it('FR-RTE-07 an expired part cannot be decided and says so', async () => {
   routed('AWAITING_APPROVAL', '2026-11-01T09:00:00Z'); evidence!.route.parts![1].expired = true;
   mount('approve', 'approver', true);
-  expect(await screen.findByText('Deadline passed; moved to the backup approver')).toBeVisible();
+  expect(await screen.findByText('Deadline passed; re-verification required')).toBeVisible();
+  expect(screen.queryByText(/moved to the backup/)).not.toBeInTheDocument();
+  expect(screen.queryByText('Assigned approver')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Review & approve' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Reject plan' })).toBeDisabled();
 });
@@ -205,6 +213,15 @@ it('AT-16 a stale approval refreshes and shows the current plan', async () => {
   fireEvent.click(dialog.getByRole('button', { name: 'Approve plan part' }));
   expect(await screen.findByText('The plan changed. The current plan is shown; review it before deciding.')).toBeVisible();
   await waitFor(() => expect(caseReads()).toBeGreaterThan(before));
+});
+it('AT-16 a refusal of the current plan says the decision was refused, not that the plan changed', async () => {
+  routed(); postStatus = 409; conflictHash = planHash; mount('approve', 'approver', true);
+  fireEvent.click(await screen.findByRole('button', { name: 'Review & approve' }));
+  const dialog = within(screen.getByRole('dialog', { name: 'Confirm approval' }));
+  fireEvent.click(dialog.getByRole('checkbox'));
+  fireEvent.click(dialog.getByRole('button', { name: 'Approve plan part' }));
+  expect(await screen.findByText('The decision was refused. The refreshed case shows the current state.')).toBeVisible();
+  expect(screen.queryByText(/The plan changed/)).not.toBeInTheDocument();
 });
 it('FR-UI-10 execute view lists steps, SAP documents, undo and milestones', async () => {
   routed('MONITORING'); mount('execute', 'approver');

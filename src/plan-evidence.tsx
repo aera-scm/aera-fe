@@ -3,11 +3,16 @@ import type { CheckResult, ExecutionView, Option, PlanPartView, PlanView, RouteV
 import { Source, Status } from './components';
 import { tx } from './tx';
 export const usd = (value: number) => `${value.toLocaleString('en-US')} USD`;
-const planSource = (caseId: string, field: string) => `api:/cases/${encodeURIComponent(caseId)}/plan/${field}`;
+export const planSource = (caseId: string, field: string) => `api:/cases/${encodeURIComponent(caseId)}/plan/${field}`;
 const routeSource = (caseId: string, partId: string, field: string) => `api:/cases/${encodeURIComponent(caseId)}/route/parts/${encodeURIComponent(partId)}/${field}`;
 const label = (value: string) => value.replaceAll('_', ' ').toLowerCase();
 const blockedBy = (checks: CheckResult[], optionId: string) => checks.filter(check => check.optionId === optionId && check.blocking && !check.passed);
 export function partOptions(plan: PlanView, part: PlanPartView) { return plan.plan.options.filter(option => part.options.includes(option.id)); }
+/** FR-IMP-03: a single option's cost keeps its rate-card source; a part total is the stored route value. */
+export function partCostSource(caseId: string, plan: PlanView, part: PlanPartView) {
+  const options = partOptions(plan, part);
+  return options.length === 1 ? options[0].costSourceRef : routeSource(caseId, part.planPartId, 'costUsd');
+}
 export function partState(part: PlanPartView) {
   if (part.tier === 1) return tx('executes without approval');
   if (part.tier === 3) return tx('escalated');
@@ -18,7 +23,7 @@ export function partState(part: PlanPartView) {
 export function TimeLeft({ part }: { part: PlanPartView }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(timer); }, []);
-  if (part.expired) return <strong className="time-left late">{tx('Deadline passed; moved to the backup approver')}</strong>;
+  if (part.expired) return <strong className="time-left late">{tx('Deadline passed; re-verification required')}</strong>;
   if (!part.deadlineAt) return <span className="muted">{tx('No deadline returned by server')}</span>;
   const left = Date.parse(part.deadlineAt) - now;
   if (left <= 0) return <strong className="time-left late">{tx('Deadline passed; re-verification required')}</strong>;
@@ -27,12 +32,13 @@ export function TimeLeft({ part }: { part: PlanPartView }) {
 function CheckList({ checks }: { checks: CheckResult[] }) {
   return <ul className="check-list">{checks.map((check, index) => <li key={`${check.checkId}-${index}`} className={check.passed ? 'pass' : check.blocking ? 'fail' : 'flag'}><strong>{check.checkId}</strong><span className="check-state">{check.passed ? tx('Pass') : check.blocking ? tx('Blocked') : tx('Flagged')}</span><span>{check.detail}</span></li>)}</ul>;
 }
-function OptionCard({ option, plan }: { option: Option; plan: PlanView }) {
+function OptionCard({ caseId, option, plan }: { caseId: string; option: Option; plan: PlanView }) {
+  const ref = (field: string) => planSource(caseId, `options/${option.id}/${field}`);
   const checks = (plan.checks ?? []).filter(check => check.optionId === option.id);
   const blocked = blockedBy(plan.checks ?? [], option.id);
   return <article className={`option-card${blocked.length ? ' blocked' : ''}`}>
     <div className="panel-top"><h3>{option.id} · {option.name}</h3><span className={`badge ${blocked.length ? 'red' : plan.plan.chosen.includes(option.id) ? 'green' : 'blue'}`}><i/>{blocked.length ? `Blocked · ${blocked.map(check => check.checkId).join(', ')}` : plan.plan.chosen.includes(option.id) ? tx('Chosen') : tx('Viable')}</span></div>
-    <dl className="details"><div><dt>{tx('Coverage')}</dt><dd>{option.coverageUnits} {tx('units')}</dd></div><div><dt>{tx('Cost')}</dt><dd><Source sourceRef={option.costSourceRef}>{usd(option.costUsd)}</Source></dd></div><div><dt>{tx('Arrival')}</dt><dd><time dateTime={option.arrival}>{option.arrival}</time></dd></div>{option.actions.map((action, index) => <div key={index}><dt>{tx('Action')}</dt><dd>{label(action.type)}</dd></div>)}</dl>
+    <dl className="details"><div><dt>{tx('Coverage')}</dt><dd><Source sourceRef={ref('coverageUnits')}>{option.coverageUnits} {tx('units')}</Source></dd></div><div><dt>{tx('Cost')}</dt><dd><Source sourceRef={option.costSourceRef}>{usd(option.costUsd)}</Source></dd></div><div><dt>{tx('Arrival')}</dt><dd><Source sourceRef={ref('arrival')}>{option.arrival}</Source></dd></div>{option.actions.map((action, index) => <div key={index}><dt>{tx('Action')}</dt><dd>{label(action.type)}</dd></div>)}</dl>
     {option.figures?.length ? <dl className="details">{option.figures.map((figure, index) => <div key={`${figure.name}-${index}`}><dt>{figure.name}</dt><dd><Source sourceRef={figure.sourceRef}>{String(figure.value)} {figure.unit ?? ''}</Source></dd></div>)}</dl> : null}
     <p className="fine-print">{option.rationale}</p>
     {checks.length ? <CheckList checks={checks}/> : <p className="muted">{tx('No checks recorded for this option')}</p>}
@@ -43,24 +49,24 @@ export function PlanOptions({ caseId, plan }: { caseId: string; plan: PlanView }
   const planChecks = (plan.checks ?? []).filter(check => check.optionId == null);
   return <>
     <article className="panel recommendation"><h3>{tx('Chosen plan')}: {plan.plan.chosen.join(' + ')}</h3>
-      <dl className="details"><div><dt>{tx('Total cost')}</dt><dd><Source sourceRef={planSource(caseId, 'totalCostUsd')}>{usd(plan.plan.totalCostUsd)}</Source></dd></div><div><dt>{tx('Coverage')}</dt><dd>{plan.plan.coverageUnits} {tx('units')}</dd></div><div><dt>{tx('Plan confidence (BR-18)')}</dt><dd>{plan.confidence == null ? tx('Not verified yet') : <Source sourceRef={planSource(caseId, 'confidence')}>{String(plan.confidence)}</Source>}</dd></div><div><dt>{tx('Automated Reasoning')}</dt><dd>{plan.automatedReasoning ? <Status value={plan.automatedReasoning.status}/> : tx('Not returned by server')}</dd></div></dl>
+      <dl className="details"><div><dt>{tx('Total cost')}</dt><dd><Source sourceRef={planSource(caseId, 'totalCostUsd')}>{usd(plan.plan.totalCostUsd)}</Source></dd></div><div><dt>{tx('Coverage')}</dt><dd><Source sourceRef={planSource(caseId, 'coverageUnits')}>{plan.plan.coverageUnits} {tx('units')}</Source></dd></div><div><dt>{tx('Plan confidence (BR-18)')}</dt><dd>{plan.confidence == null ? tx('Not verified yet') : <Source sourceRef={planSource(caseId, 'confidence')}>{String(plan.confidence)}</Source>}</dd></div><div><dt>{tx('Automated Reasoning')}</dt><dd>{plan.automatedReasoning ? <Status value={plan.automatedReasoning.status}/> : tx('Not returned by server')}</dd></div></dl>
       <p className="fine-print">{plan.plan.rationale}</p>
       {planChecks.length ? <CheckList checks={planChecks}/> : null}
     </article>
-    <div className="option-grid">{plan.plan.options.map(option => <OptionCard key={option.id} option={option} plan={plan}/>)}</div>
+    <div className="option-grid">{plan.plan.options.map(option => <OptionCard key={option.id} caseId={caseId} option={option} plan={plan}/>)}</div>
   </>;
 }
 /** FR-RTE-02/07/08: one plan part with cost, checks, sources, undo summary and time left. */
 export function PartEvidence({ caseId, plan, part }: { caseId: string; plan: PlanView; part: PlanPartView }) {
   const options = partOptions(plan, part);
   const blocked = options.flatMap(option => blockedBy(plan.checks ?? [], option.id));
-  const costRef = options.length === 1 ? options[0].costSourceRef : routeSource(caseId, part.planPartId, 'costUsd');
+  const costRef = partCostSource(caseId, plan, part);
   return <article className="panel plan-part">
     <div className="panel-top"><h3>{tx('Tier')} {part.tier} · {partState(part)}</h3><span className="muted">{tx('Options')} {part.options.join(' + ')}</span></div>
     <dl className="details">
       <div><dt>{tx('Cost')}</dt><dd><Source sourceRef={costRef}>{usd(part.costUsd)}</Source></dd></div>
       <div><dt>{tx('Checks')}</dt><dd>{blocked.length ? `${tx('Blocked by')} ${blocked.map(check => check.checkId).join(', ')}` : tx('No blocking check failed on this part')}</dd></div>
-      {part.tier === 2 && <><div><dt>{tx('Assigned approver')}</dt><dd>{part.approverId ?? tx('None available')}</dd></div><div><dt>{tx('Backup approver')}</dt><dd>{part.backupApproverId ?? tx('None available')}</dd></div><div><dt>{tx('Time left')}</dt><dd>{part.decision ? tx('Decided') : <TimeLeft part={part}/>}</dd></div></>}
+      {part.tier === 2 && <>{!part.expired && <><div><dt>{tx('Assigned approver')}</dt><dd>{part.approverId ?? tx('None available')}</dd></div><div><dt>{tx('Backup approver')}</dt><dd>{part.backupApproverId ?? tx('None available')}</dd></div></>}<div><dt>{tx('Time left')}</dt><dd>{part.decision ? tx('Decided') : <TimeLeft part={part}/>}</dd></div></>}
       {part.decision && <><div><dt>{tx('Decision')}</dt><dd><Status value={part.decision}/>{part.decidedAt && <small> · {part.decidedAt}</small>}</dd></div>{part.comment ? <div><dt>{tx('Comment')}</dt><dd>{part.comment}</dd></div> : null}</>}
     </dl>
     <h4>{tx('Sources')}</h4>

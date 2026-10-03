@@ -11,7 +11,7 @@ import { caseDetail, confirmField, decideApproval, rollbackCase, startRun } from
 import type { Case, ExtractedField, Signal } from './api/types.generated';
 import { Empty, Heading, Notice, Source, Status } from './components';
 import { tx } from './tx';
-import { ExecutionList, PartEvidence, PlanOptions, TimeLeft, UndoSummary, partOptions, usd } from './plan-evidence';
+import { ExecutionList, PartEvidence, PlanOptions, TimeLeft, UndoSummary, partCostSource, partOptions, usd } from './plan-evidence';
 const stages = ['signal', 'triage', 'impact', 'options', 'approve', 'execute'];
 const startable = ['TRIAGED', 'WAITING_PLANNER', 'WAITING_SUPPLIER', 'PLAN_PROPOSED', 'REJECTED', 'ESCALATED'];
 type Review = { kind: 'field'; field: ExtractedField; signalId: string; updatedAt: string }
@@ -69,7 +69,11 @@ export function LiveWorkspace({ role, ask, connected, approvalOnly = false }: { 
     onError: (error, action) => {
       setReview(null); setChecked(false);
       // AT-16: a stale decision is refused; the refreshed case shows the current plan.
-      if (action.kind === 'approval' && error instanceof ApiError && error.status === 409) setNotice(tx('The plan changed. The current plan is shown; review it before deciding.'));
+      if (action.kind === 'approval' && error instanceof ApiError && error.status === 409) {
+        setNotice(error.currentPlanVersionHash && error.currentPlanVersionHash !== action.planVersionHash
+          ? tx('The plan changed. The current plan is shown; review it before deciding.')
+          : tx('The decision was refused. The refreshed case shows the current state.'));
+      }
     },
     onSettled: async () => { await refresh(); submitting.current = false; },
   });
@@ -112,7 +116,7 @@ export function LiveWorkspace({ role, ask, connected, approvalOnly = false }: { 
     </>}
     <Modal visible={Boolean(review)} onDismiss={() => { if (!mutation.isPending) setReview(null); }} header={review?.kind === 'field' ? tx('Confirm extracted field') : review?.kind === 'rollback' ? tx('Confirm rollback request') : review?.kind === 'approval' ? (review.decision === 'APPROVED' ? tx('Confirm approval') : tx('Confirm rejection')) : tx('Confirm run request')} footer={<div className="modal-buttons"><Button disabled={mutation.isPending} onClick={() => setReview(null)}>{tx('Cancel')}</Button><Button variant="primary" disabled={!checked || !canConfirm || mutation.isPending} onClick={submit}>{review?.kind === 'approval' ? (review.decision === 'APPROVED' ? tx('Approve plan part') : tx('Reject plan part')) : tx('Submit confirmed request')}</Button></div>}>
       <p>{tx('Case')}: <strong>{id}</strong></p>
-      {review?.kind === 'approval' && plan && pending ? <><p>{tx('Plan part')}: <strong>{partOptions(plan, pending).map(option => `${option.id} · ${option.name}`).join(' + ')}</strong></p><dl className="details"><div><dt>{tx('Cost')}</dt><dd>{usd(pending.costUsd)}</dd></div><div><dt>{tx('Revenue at risk')}</dt><dd>{row?.rarUsd == null ? tx('Not returned by server') : usd(row.rarUsd)}</dd></div><div><dt>{tx('Time left')}</dt><dd><TimeLeft part={pending}/></dd></div></dl><h4>{tx('Undo plan summary')}</h4><UndoSummary part={pending}/><label className="form-label">{review.decision === 'REJECTED' ? tx('Reason (required)') : tx('Comment (optional)')}<textarea maxLength={2000} value={value} onChange={event => setValue(event.target.value)} disabled={mutation.isPending}/></label></>
+      {review?.kind === 'approval' && plan && pending ? <><p>{tx('Plan part')}: <strong>{partOptions(plan, pending).map(option => `${option.id} · ${option.name}`).join(' + ')}</strong></p><dl className="details"><div><dt>{tx('Cost')}</dt><dd><Source sourceRef={partCostSource(id, plan, pending)}>{usd(pending.costUsd)}</Source></dd></div><div><dt>{tx('Revenue at risk')}</dt><dd>{row?.rarUsd == null ? tx('Not returned by server') : <Source sourceRef={caseSource(id, 'rarUsd')}>{usd(row.rarUsd)}</Source>}</dd></div><div><dt>{tx('Time left')}</dt><dd><TimeLeft part={pending}/></dd></div></dl><h4>{tx('Undo plan summary')}</h4><UndoSummary part={pending}/><label className="form-label">{review.decision === 'REJECTED' ? tx('Reason (required)') : tx('Comment (optional)')}<textarea maxLength={2000} value={value} onChange={event => setValue(event.target.value)} disabled={mutation.isPending}/></label></>
       : review?.kind === 'field' ? <><p>{tx('Check original evidence. Confirming a field may resume server reasoning; it does not approve a plan.')}</p><p><strong>{review.field.name}</strong>: <Source sourceRef={signalSource(id, review.signalId, `fields/${review.field.fieldId}/value`)}>{review.field.value}</Source></p><label className="form-label">{tx('Confirmed value')}<input aria-label={tx('Confirmed value')} value={value} onChange={event => setValue(event.target.value)} disabled={mutation.isPending}/></label></> : <p>{review?.kind === 'rollback' ? tx('This requests rollback of the executed plan on a reopened case. SAP changes may follow. The server validates eligibility and the deterministic workflow performs rollback.') : tx('This requests a new asynchronous reasoning run. Review updated evidence before making any later approval decision.')}</p>}
       <Checkbox checked={checked} disabled={mutation.isPending} onChange={({ detail: change }) => setChecked(change.checked)}>{review?.kind === 'approval' ? tx('I reviewed the plan, checks, sources and undo summary and confirm this decision.') : tx('I reviewed the current evidence and confirm this server request.')}</Checkbox>
       {review && !canConfirm && <p role="status">{tx('Refresh and review current evidence, permissions and field value before submitting.')}</p>}
