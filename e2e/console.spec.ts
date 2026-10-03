@@ -183,7 +183,9 @@ test('sidebar uses panel icons and respects reduced motion without redundant ban
   expect(await page.locator('.route-view').evaluate(element => getComputedStyle(element).animationName)).toBe('none');
 });
 
-test('tab branding and layouts adapt through phone tablet and wide screen sizes', async ({ page }) => {
+// One test per sweep: a single test covering every size and route ran past the 30 s
+// per-test limit on CI runners.
+test('options layout adapts through phone tablet and wide screen sizes', async ({ page }) => {
   await page.goto('/board');
   await page.evaluate(() => localStorage.setItem('aera-sidebar-width', '320'));
   for (const width of [320, 641, 768, 820, 1024, 1101, 1280, 1440, 2560]) {
@@ -195,7 +197,13 @@ test('tab branding and layouts adapt through phone tablet and wide screen sizes'
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(await page.locator('.top-actions').evaluate(element => element.getBoundingClientRect().right <= innerWidth)).toBe(true);
   }
-  for (const width of [320, 768, 1024, 1920]) {
+});
+
+for (const width of [320, 768, 1024, 1920]) {
+  test(`board, approval, Lab and admin fit a ${width} px wide screen`, async ({ page }) => {
+    // Widest sidebar, as in the options sweep: the hardest case for the layout.
+    await page.goto('/board');
+    await page.evaluate(() => localStorage.setItem('aera-sidebar-width', '320'));
     await page.setViewportSize({ width, height: 600 });
     for (const route of ['/board', '/approvals/' + referenceId, '/lab/judge', '/admin']) {
       await page.goto(route);
@@ -204,7 +212,12 @@ test('tab branding and layouts adapt through phone tablet and wide screen sizes'
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await expect(page).toHaveTitle('AERA');
     }
-  }
+  });
+}
+
+test('tab carries the AERA brand icon', async ({ page }) => {
+  await page.goto('/board');
+  await expect(page).toHaveTitle('AERA');
   const icon = page.locator('link[rel="icon"]');
   await expect(icon).toHaveAttribute('href', '/brand/logo%20pure.png');
   const response = await page.request.get('/brand/logo%20pure.png');
