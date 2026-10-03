@@ -1,0 +1,1961 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AeraContract",
+  "type": "object",
+  "definitions": {
+    "CaseStatus": {
+      "enum": [
+        "RECEIVED",
+        "TRIAGED",
+        "INVESTIGATING",
+        "WAITING_PLANNER",
+        "WAITING_SUPPLIER",
+        "PLAN_PROPOSED",
+        "VERIFIED",
+        "AWAITING_APPROVAL",
+        "AUTO_APPROVED",
+        "APPROVED",
+        "REJECTED",
+        "ESCALATED",
+        "EXECUTING",
+        "MONITORING",
+        "REOPENED",
+        "CLOSED",
+        "ROLLED_BACK",
+        "FAILED_ROLLED_BACK"
+      ],
+      "type": "string",
+      "title": "CaseStatus"
+    },
+    "Figure": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sourceRef": {
+          "type": "string"
+        },
+        "readAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "sourceRef"
+      ],
+      "type": "object",
+      "title": "Figure"
+    },
+    "Case": {
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "pattern": "^EXC-\\d{4}-\\d{4,}$",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "MRP_EXCEPTION",
+            "SUPPLIER_DELAY",
+            "CARRIER_DELAY",
+            "QUANTITY_SHORTFALL",
+            "OTHER"
+          ],
+          "type": "string"
+        },
+        "material": {
+          "type": "string"
+        },
+        "materialDescription": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "plant": {
+          "type": "string"
+        },
+        "poNumber": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "poItem": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "$ref": "#/definitions/CaseStatus"
+        },
+        "tier": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2,
+                3
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "priorityScore": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rarUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stockoutAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "daysLate": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "planVersion": {
+          "default": 0,
+          "type": "integer"
+        },
+        "activeRunId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "signalIds": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "figures": {
+          "items": {
+            "$ref": "#/definitions/Figure"
+          },
+          "type": "array"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "stage": {
+          "enum": [
+            "SIGNAL",
+            "TRIAGE",
+            "IMPACT",
+            "OPTIONS",
+            "APPROVE",
+            "EXECUTE"
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "type",
+        "material",
+        "plant",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "stage"
+      ],
+      "type": "object",
+      "title": "Case"
+    },
+    "ExtractedField": {
+      "additionalProperties": false,
+      "properties": {
+        "fieldId": {
+          "type": "string"
+        },
+        "signalId": {
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "enum": [
+                "PO_NUMBER",
+                "MATERIAL",
+                "QUANTITY",
+                "DELIVERY_DATE",
+                "PRICE"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "TRACKING_NUMBER",
+                "CARRIER_STATUS",
+                "ETA",
+                "PO_ITEM"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "status": {
+          "$ref": "#/definitions/FieldStatus"
+        },
+        "confirmedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "fieldId",
+        "signalId",
+        "name",
+        "value",
+        "confidence",
+        "status"
+      ],
+      "type": "object",
+      "title": "ExtractedField"
+    },
+    "FieldStatus": {
+      "enum": [
+        "CONFIRMED",
+        "UNCONFIRMED",
+        "SAP_MATCHED"
+      ],
+      "type": "string",
+      "title": "FieldStatus"
+    },
+    "SignalChannel": {
+      "enum": [
+        "EMAIL",
+        "WHATSAPP",
+        "CARRIER",
+        "MANUAL",
+        "AGENT",
+        "LAB"
+      ],
+      "type": "string",
+      "title": "SignalChannel"
+    },
+    "SignalStatus": {
+      "enum": [
+        "RECEIVED",
+        "ACCEPTED",
+        "QUARANTINED"
+      ],
+      "type": "string",
+      "title": "SignalStatus"
+    },
+    "Signal": {
+      "additionalProperties": false,
+      "properties": {
+        "signalId": {
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "type": "string"
+        },
+        "channel": {
+          "$ref": "#/definitions/SignalChannel"
+        },
+        "senderId": {
+          "type": "string"
+        },
+        "senderVerified": {
+          "default": false,
+          "type": "boolean"
+        },
+        "supplierId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "receivedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "rawS3Key": {
+          "type": "string"
+        },
+        "rawSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "attachments": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "normalizedText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "guardrailResult": {
+          "default": "NOT_SCANNED",
+          "enum": [
+            "NOT_SCANNED",
+            "PASSED",
+            "BLOCKED"
+          ],
+          "type": "string"
+        },
+        "quarantineReason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "poNumber": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "material": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "caseId": {
+          "anyOf": [
+            {
+              "pattern": "^EXC-\\d{4}-\\d{4,}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "$ref": "#/definitions/SignalStatus",
+          "default": "RECEIVED"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/definitions/ExtractedField"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "signalId",
+        "channel",
+        "senderId",
+        "receivedAt",
+        "rawS3Key",
+        "rawSha256"
+      ],
+      "type": "object",
+      "title": "Signal"
+    },
+    "BookAirFreight": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "BOOK_AIR_FREIGHT",
+          "type": "string"
+        },
+        "supplierId": {
+          "type": "string"
+        },
+        "poNumber": {
+          "type": "string"
+        },
+        "poItem": {
+          "type": "string"
+        },
+        "qty": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "arrival": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "supplierId",
+        "poNumber",
+        "poItem",
+        "qty",
+        "arrival"
+      ],
+      "type": "object",
+      "title": "BookAirFreight"
+    },
+    "ChangePoDate": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "CHANGE_PO_DATE",
+          "type": "string"
+        },
+        "poNumber": {
+          "type": "string"
+        },
+        "poItem": {
+          "type": "string"
+        },
+        "scheduleLine": {
+          "type": "string"
+        },
+        "newDate": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "poNumber",
+        "poItem",
+        "scheduleLine",
+        "newDate"
+      ],
+      "type": "object",
+      "title": "ChangePoDate"
+    },
+    "CreatePoAlternate": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "CREATE_PO_ALTERNATE",
+          "type": "string"
+        },
+        "supplierId": {
+          "type": "string"
+        },
+        "material": {
+          "type": "string"
+        },
+        "plant": {
+          "type": "string"
+        },
+        "qty": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "deliveryDate": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "supplierId",
+        "material",
+        "plant",
+        "qty",
+        "deliveryDate"
+      ],
+      "type": "object",
+      "title": "CreatePoAlternate"
+    },
+    "CreateSto": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "CREATE_STO",
+          "type": "string"
+        },
+        "fromPlant": {
+          "type": "string"
+        },
+        "toPlant": {
+          "type": "string"
+        },
+        "material": {
+          "type": "string"
+        },
+        "qty": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "deliveryDate": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "fromPlant",
+        "toPlant",
+        "material",
+        "qty",
+        "deliveryDate"
+      ],
+      "type": "object",
+      "title": "CreateSto"
+    },
+    "Option": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Z]$",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "actions": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "BOOK_AIR_FREIGHT": "#/definitions/BookAirFreight",
+                "CHANGE_PO_DATE": "#/definitions/ChangePoDate",
+                "CREATE_PO_ALTERNATE": "#/definitions/CreatePoAlternate",
+                "CREATE_STO": "#/definitions/CreateSto",
+                "SPLIT_PO_SCHEDULE_LINE": "#/definitions/SplitPoScheduleLine"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/definitions/CreateSto"
+              },
+              {
+                "$ref": "#/definitions/ChangePoDate"
+              },
+              {
+                "$ref": "#/definitions/SplitPoScheduleLine"
+              },
+              {
+                "$ref": "#/definitions/BookAirFreight"
+              },
+              {
+                "$ref": "#/definitions/CreatePoAlternate"
+              }
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "coverageUnits": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "arrival": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "costUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "costSourceRef": {
+          "type": "string"
+        },
+        "figures": {
+          "items": {
+            "$ref": "#/definitions/Figure"
+          },
+          "type": "array"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "actions",
+        "coverageUnits",
+        "arrival",
+        "costUsd",
+        "costSourceRef",
+        "rationale"
+      ],
+      "type": "object",
+      "title": "Option"
+    },
+    "Part": {
+      "additionalProperties": false,
+      "properties": {
+        "qty": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "deliveryDate": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "qty",
+        "deliveryDate"
+      ],
+      "type": "object",
+      "title": "Part"
+    },
+    "SplitPoScheduleLine": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SPLIT_PO_SCHEDULE_LINE",
+          "type": "string"
+        },
+        "poNumber": {
+          "type": "string"
+        },
+        "poItem": {
+          "type": "string"
+        },
+        "scheduleLine": {
+          "type": "string"
+        },
+        "parts": {
+          "items": {
+            "$ref": "#/definitions/Part"
+          },
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "poNumber",
+        "poItem",
+        "scheduleLine",
+        "parts"
+      ],
+      "type": "object",
+      "title": "SplitPoScheduleLine"
+    },
+    "ProposedPlan": {
+      "additionalProperties": false,
+      "description": "What the agent may propose; no confidence and no checks (BR-18, 6.5).",
+      "properties": {
+        "caseId": {
+          "pattern": "^EXC-\\d{4}-\\d{4,}$",
+          "type": "string"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/definitions/Option"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "chosen": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "totalCostUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "coverageUnits": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "planVersion",
+        "options",
+        "chosen",
+        "totalCostUsd",
+        "coverageUnits",
+        "rationale"
+      ],
+      "type": "object",
+      "title": "ProposedPlan"
+    },
+    "CheckResult": {
+      "additionalProperties": false,
+      "properties": {
+        "checkId": {
+          "pattern": "^V-\\d{2}$",
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "optionId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "checkId",
+        "passed",
+        "blocking",
+        "detail"
+      ],
+      "type": "object",
+      "title": "CheckResult"
+    },
+    "PlanRecord": {
+      "additionalProperties": false,
+      "description": "A stored plan: the proposal plus what the Verifier computed.",
+      "properties": {
+        "plan": {
+          "$ref": "#/definitions/ProposedPlan"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/definitions/CheckResult"
+          },
+          "type": "array"
+        },
+        "proposedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "verifiedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "plan",
+        "proposedAt"
+      ],
+      "type": "object",
+      "title": "PlanRecord"
+    },
+    "Approval": {
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "pattern": "^EXC-\\d{4}-\\d{4,}$",
+          "type": "string"
+        },
+        "planPartId": {
+          "type": "string"
+        },
+        "planVersionHash": {
+          "type": "string"
+        },
+        "approverId": {
+          "type": "string"
+        },
+        "backupApproverId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "limitUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "deadlineAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "remindedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "enum": [
+                "APPROVED",
+                "REJECTED"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decidedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "caseId",
+        "planPartId",
+        "planVersionHash",
+        "approverId",
+        "limitUsd",
+        "deadlineAt"
+      ],
+      "type": "object",
+      "title": "Approval"
+    },
+    "Reservation": {
+      "additionalProperties": false,
+      "properties": {
+        "materialPlant": {
+          "type": "string"
+        },
+        "reservationId": {
+          "type": "string"
+        },
+        "caseId": {
+          "pattern": "^EXC-\\d{4}-\\d{4,}$",
+          "type": "string"
+        },
+        "qty": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "HELD",
+            "COMMITTED",
+            "RELEASED"
+          ],
+          "type": "string"
+        },
+        "version": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "materialPlant",
+        "reservationId",
+        "caseId",
+        "qty",
+        "status"
+      ],
+      "type": "object",
+      "title": "Reservation"
+    },
+    "ExecutionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "idempotencyKey": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "request": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sapDocNumber": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "PENDING",
+            "SUCCEEDED",
+            "FAILED",
+            "UNDONE"
+          ],
+          "type": "string"
+        },
+        "undoAction": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "idempotencyKey",
+        "action",
+        "request",
+        "status"
+      ],
+      "type": "object",
+      "title": "ExecutionRecord"
+    },
+    "AuditEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "eventId": {
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "type": "string"
+        },
+        "chainKey": {
+          "type": "string"
+        },
+        "caseId": {
+          "anyOf": [
+            {
+              "pattern": "^EXC-\\d{4}-\\d{4,}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "actor": {
+          "pattern": "^(system|agent|user:\\S+)$",
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "prevHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "chainKey",
+        "ts",
+        "actor",
+        "type",
+        "payload",
+        "prevHash",
+        "hash"
+      ],
+      "type": "object",
+      "title": "AuditEvent"
+    },
+    "ConfigItem": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "changedBy": {
+          "type": "string"
+        },
+        "changedAt": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "value",
+        "changedBy",
+        "changedAt"
+      ],
+      "type": "object",
+      "title": "ConfigItem"
+    },
+    "RateCard": {
+      "additionalProperties": false,
+      "properties": {
+        "entryId": {
+          "type": "string"
+        },
+        "actionType": {
+          "enum": [
+            "STO",
+            "AIR_FREIGHT",
+            "ALTERNATE_SUPPLIER",
+            "EXPEDITE"
+          ],
+          "type": "string"
+        },
+        "fromPlant": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "toPlant": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "supplierId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lane": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "unitCostUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "fixedCostUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "leadTimeHours": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "validFrom": {
+          "format": "date",
+          "type": "string"
+        },
+        "validTo": {
+          "format": "date",
+          "type": "string"
+        },
+        "changedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "entryId",
+        "actionType",
+        "unitCostUsd",
+        "fixedCostUsd",
+        "leadTimeHours",
+        "validFrom",
+        "validTo"
+      ],
+      "type": "object",
+      "title": "RateCard"
+    },
+    "ApproverLimit": {
+      "additionalProperties": false,
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "role": {
+          "const": "approver",
+          "type": "string"
+        },
+        "plant": {
+          "type": "string"
+        },
+        "limitUsd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "validFrom": {
+          "format": "date",
+          "type": "string"
+        },
+        "validTo": {
+          "format": "date",
+          "type": "string"
+        },
+        "grantedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "userId",
+        "role",
+        "plant",
+        "limitUsd",
+        "validFrom",
+        "validTo"
+      ],
+      "type": "object",
+      "title": "ApproverLimit"
+    },
+    "SupplierReliability": {
+      "additionalProperties": false,
+      "properties": {
+        "supplierId": {
+          "type": "string"
+        },
+        "material": {
+          "type": "string"
+        },
+        "windowDays": {
+          "type": "integer"
+        },
+        "sampleSize": {
+          "type": "integer"
+        },
+        "onTimeRate": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "meanDelayDays": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "p90DelayDays": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "partialRate": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "computedAt": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "supplierId",
+        "material",
+        "windowDays",
+        "sampleSize",
+        "onTimeRate",
+        "meanDelayDays",
+        "p90DelayDays",
+        "partialRate",
+        "computedAt"
+      ],
+      "type": "object",
+      "title": "SupplierReliability"
+    },
+    "DialogueMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "messageId": {
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "type": "string"
+        },
+        "caseId": {
+          "pattern": "^EXC-\\d{4}-\\d{4,}$",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "OUTBOUND",
+            "INBOUND"
+          ],
+          "type": "string"
+        },
+        "supplierId": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "templateId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "renderedText": {
+          "type": "string"
+        },
+        "englishCopy": {
+          "type": "string"
+        },
+        "referenceToken": {
+          "type": "string"
+        },
+        "sentAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "replySignalId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "DRAFT",
+            "SENT",
+            "REPLIED",
+            "TIMED_OUT",
+            "BLOCKED"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "messageId",
+        "caseId",
+        "direction",
+        "supplierId",
+        "language",
+        "renderedText",
+        "englishCopy",
+        "referenceToken",
+        "status"
+      ],
+      "type": "object",
+      "title": "DialogueMessage"
+    },
+    "Portfolio": {
+      "additionalProperties": false,
+      "properties": {
+        "portfolioId": {
+          "type": "string"
+        },
+        "caseIds": {
+          "items": {
+            "pattern": "^EXC-\\d{4}-\\d{4,}$",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "candidateActions": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "solverStatus": {
+          "enum": [
+            "OPTIMAL",
+            "FEASIBLE",
+            "INFEASIBLE",
+            "TIMEOUT"
+          ],
+          "type": "string"
+        },
+        "objective": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "savingVsSingle": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "required": [
+        "portfolioId",
+        "caseIds",
+        "candidateActions",
+        "solverStatus",
+        "objective",
+        "savingVsSingle"
+      ],
+      "type": "object",
+      "title": "Portfolio"
+    },
+    "ScenarioRun": {
+      "additionalProperties": false,
+      "properties": {
+        "scenarioId": {
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "synthetic": {
+          "const": true,
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "scenarioId",
+        "parameters",
+        "createdBy"
+      ],
+      "type": "object",
+      "title": "ScenarioRun"
+    },
+    "EventEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "SignalReceived",
+            "SignalAccepted",
+            "SignalQuarantined",
+            "SignalExtracted",
+            "MrpExceptionsPolled",
+            "CaseOpened",
+            "CaseUpdated",
+            "CaseReadyForRun",
+            "RunStarted",
+            "RunEnded",
+            "PlanProposed",
+            "PlanVerified",
+            "PlanRouted",
+            "PlanApproved",
+            "PlanRejected",
+            "ExecutionStarted",
+            "ExecutionCompleted",
+            "ExecutionFailed",
+            "NotificationRequested",
+            "SupplierInfoRequested",
+            "SupplierReplyMatched",
+            "GoodsReceiptDue",
+            "CaseClosed",
+            "CaseReopened",
+            "PortfolioSolved",
+            "LabScenarioCreated"
+          ],
+          "type": "string"
+        },
+        "time": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "env": {
+          "type": "string"
+        },
+        "caseId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "runId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "traceId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "actor": {
+          "pattern": "^(system|agent|user:\\S+)$",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "time",
+        "env",
+        "actor",
+        "data"
+      ],
+      "type": "object",
+      "title": "EventEnvelope"
+    },
+    "TraceEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "pattern": "^EXC-\\d{4}-\\d{4,}$",
+          "type": "string"
+        },
+        "eventId": {
+          "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+          "type": "string"
+        },
+        "runId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "enum": [
+            "AGENT",
+            "TOOL_CALL",
+            "TOOL_RESULT",
+            "CHECK",
+            "GUARD",
+            "SYSTEM"
+          ],
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "kind",
+        "title",
+        "ts"
+      ],
+      "type": "object",
+      "title": "TraceEvent"
+    }
+  },
+  "properties": {
+    "Case": {
+      "$ref": "#/definitions/Case"
+    },
+    "Signal": {
+      "$ref": "#/definitions/Signal"
+    },
+    "ExtractedField": {
+      "$ref": "#/definitions/ExtractedField"
+    },
+    "Figure": {
+      "$ref": "#/definitions/Figure"
+    },
+    "ProposedPlan": {
+      "$ref": "#/definitions/ProposedPlan"
+    },
+    "PlanRecord": {
+      "$ref": "#/definitions/PlanRecord"
+    },
+    "CheckResult": {
+      "$ref": "#/definitions/CheckResult"
+    },
+    "Approval": {
+      "$ref": "#/definitions/Approval"
+    },
+    "Reservation": {
+      "$ref": "#/definitions/Reservation"
+    },
+    "ExecutionRecord": {
+      "$ref": "#/definitions/ExecutionRecord"
+    },
+    "AuditEvent": {
+      "$ref": "#/definitions/AuditEvent"
+    },
+    "ConfigItem": {
+      "$ref": "#/definitions/ConfigItem"
+    },
+    "RateCard": {
+      "$ref": "#/definitions/RateCard"
+    },
+    "ApproverLimit": {
+      "$ref": "#/definitions/ApproverLimit"
+    },
+    "SupplierReliability": {
+      "$ref": "#/definitions/SupplierReliability"
+    },
+    "DialogueMessage": {
+      "$ref": "#/definitions/DialogueMessage"
+    },
+    "Portfolio": {
+      "$ref": "#/definitions/Portfolio"
+    },
+    "ScenarioRun": {
+      "$ref": "#/definitions/ScenarioRun"
+    },
+    "EventEnvelope": {
+      "$ref": "#/definitions/EventEnvelope"
+    },
+    "TraceEvent": {
+      "$ref": "#/definitions/TraceEvent"
+    }
+  },
+  "additionalProperties": false
+}

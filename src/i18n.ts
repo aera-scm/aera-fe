@@ -1,0 +1,11 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+void i18n.use(initReactI18next).init({
+  lng: 'en', fallbackLng: 'en', supportedLngs: ['en'], keySeparator: false,
+  interpolation: { escapeValue: false }, resources: {
+  en: { translation: { board: 'Overview', approvals: 'Approvals', metrics: 'Insights', lab: 'Scenario Lab', admin: 'Settings', title: 'A little clarity. A lot of progress.', subtitle: 'Your supply chain, moving forward.', search: 'Search cases, materials or purchase orders', cases: 'Your attention makes the difference.', all: 'All cases', demo: 'Demo workspace', view: 'Review priority case', ask: 'Ask AERA', signal: 'Signal', triage: 'Triage', impact: 'Impact', options: 'Options', approve: 'Approve', execute: 'Execute', dialogueThread: 'Supplier dialogue', dialogueUnavailable: 'Dialogue unavailable. Retrying.', loadingDialogue: 'Loading dialogue...', noDialogue: 'No supplier questions for this case.', language: 'Language', oneReminderSent: 'One reminder sent', supplierReply: 'Supplier reply', untrustedSupplierText: 'Supplier content is untrusted evidence.', CONFIRM_PARTIAL_QTY: 'Confirm partial quantity', CONFIRM_SHIP_DATE: 'Confirm shipping date', REQUEST_TRACKING: 'Request tracking', DRAFT: 'Draft', SENT: 'Sent', REPLIED: 'Replied', TIMED_OUT: 'Timed out', BLOCKED: 'Blocked', originalMessage: 'Original', englishCopy: 'English copy' } },
+  },
+});
+
+export default i18n;

@@ -1,0 +1,18 @@
+[project]
+name = "aera-fe-quality"
+version = "0.0.0"
+description = "Repository security and pre-commit tooling"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "detect-secrets==1.5.0",
+    "pip-audit==2.10.1",
+    "pre-commit==4.6.2",
+    "yamllint==1.38.0",
+]
+
+[tool.uv]
+package = false
+required-version = "==0.12.18"

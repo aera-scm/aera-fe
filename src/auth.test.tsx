@@ -1,0 +1,23 @@
+import { act, cleanup, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { Hub } from 'aws-amplify/utils';
+const boundary = vi.hoisted(() => ({ session: vi.fn() }));
+vi.mock('aws-amplify/auth', () => ({ fetchAuthSession: boundary.session, signInWithRedirect: vi.fn(), signOut: vi.fn() }));
+vi.mock('aws-amplify/auth/enable-oauth-listener', () => ({}));
+vi.mock('./api/client', () => ({ demoMode: false }));
+afterEach(() => { cleanup(); vi.unstubAllEnvs(); vi.resetModules(); boundary.session.mockReset(); });
+it('NFR-SEC-04 restores roles when OAuth completes after initial session check', async () => {
+  vi.stubEnv('VITE_USER_POOL_ID', 'us-east-1_synthetic');
+  vi.stubEnv('VITE_USER_POOL_CLIENT_ID', 'synthetic-client');
+  vi.stubEnv('VITE_COGNITO_DOMAIN', 'synthetic.auth.us-east-1.amazoncognito.com');
+  boundary.session.mockResolvedValueOnce({ tokens: undefined });
+  const { AuthGate } = await import('./auth');
+  render(<AuthGate>{roles => <p>Roles: {roles.join(',')}</p>}</AuthGate>);
+  await screen.findByRole('button', { name: /Sign in securely/ });
+  boundary.session.mockResolvedValue({ tokens: { idToken: { payload: { 'cognito:groups': ['planner', 'admin'] } } } });
+  await act(async () => { Hub.dispatch('auth', { event: 'signedIn' }); });
+  expect(await screen.findByText('Roles: planner,admin')).toBeVisible();
+  await act(async () => { Hub.dispatch('auth', { event: 'signedOut' }); });
+  expect(await screen.findByRole('button', { name: /Sign in securely/ })).toBeVisible();
+  expect(screen.queryByText('Roles: planner,admin')).not.toBeInTheDocument();
+});
