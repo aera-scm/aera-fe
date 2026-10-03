@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Admin } from './admin';
 
@@ -39,5 +39,19 @@ describe('FR-UI-11 live administration', () => {
     expect(reset).toBeEnabled();
     fireEvent.click(reset);
     expect(api.resetEnvironment).toHaveBeenCalledWith('RESET dev');
+  });
+
+  it('FR-ADM-03 brings the result of every reset into view, also when repeated', async () => {
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    api.settings.mockResolvedValue({ config: { KILL_SWITCH: 'off' }, rateCard: [], approverLimits: [] });
+    api.resetEnvironment.mockResolvedValue({});
+    mount();
+    for (const attempt of [1, 2]) {
+      fireEvent.change(await screen.findByLabelText('Reset confirmation'), { target: { value: 'RESET dev' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Reset environment' }));
+      expect(await screen.findByText('Environment reset completed.')).toBeVisible();
+      await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(attempt));
+    }
   });
 });

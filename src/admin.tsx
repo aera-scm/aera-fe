@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { tx } from './tx';
 import { demoMode, type Role } from './api/client';
@@ -12,7 +12,12 @@ import { Empty, Heading, Notice, Source } from './components';
 const environment = import.meta.env.VITE_ENV_NAME ?? 'dev';
 
 export function Admin({ role }: { role: Role }) {
-  const [notice, setNotice] = useState('');
+  const [notice, setNoticeText] = useState('');
+  const [shown, setShown] = useState(0);
+  const noticeRef = useRef<HTMLDivElement>(null);
+  // The result of an action at the bottom of the page must not appear out of sight (FR-ADM-03).
+  useEffect(() => { if (shown) noticeRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); }, [shown]);
+  function setNotice(text: string) { setNoticeText(text); if (text) setShown(count => count + 1); }
   const [busy, setBusy] = useState(false);
   const [resetText, setResetText] = useState('');
   const query = useQuery({ queryKey: ['admin-settings'], queryFn: ({ signal }) => settings(signal),
@@ -47,7 +52,7 @@ export function Admin({ role }: { role: Role }) {
   return <>
     <Heading eyebrow={tx('WORKSPACE SETTINGS')} title={tx('Your rules. Always in control.')}/>
     <p className="page-description">{tx('Every change is checked and recorded in the audit trail.')}</p>
-    {notice && <Notice close={() => setNotice('')}>{notice}</Notice>}
+    <div ref={noticeRef}>{notice && <Notice close={() => setNotice('')}>{notice}</Notice>}</div>
     <article className="panel">
       <div className="panel-top"><div><h3>{tx('Advise-only mode')}</h3>
         <p className="muted">{tx('Stop new execution. Keep investigation and recommendations.')}</p>
