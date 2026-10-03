@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Admin } from './admin';
 
@@ -50,7 +50,8 @@ describe('FR-UI-11 live administration', () => {
     for (const attempt of [1, 2]) {
       fireEvent.change(await screen.findByLabelText('Reset confirmation'), { target: { value: 'RESET dev' } });
       fireEvent.click(screen.getByRole('button', { name: 'Reset environment' }));
-      expect(await screen.findByText('Environment reset completed.')).toBeVisible();
+      const panel = screen.getByRole('heading', { name: 'Reset environment' }).closest('article')!;
+      expect(await within(panel as HTMLElement).findByRole('status')).toHaveTextContent('Environment reset completed.');
       await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(attempt));
     }
   });

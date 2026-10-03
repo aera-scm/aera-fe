@@ -20,6 +20,7 @@ export function Admin({ role }: { role: Role }) {
   function setNotice(text: string) { setNoticeText(text); if (text) setShown(count => count + 1); }
   const [busy, setBusy] = useState(false);
   const [resetText, setResetText] = useState('');
+  const [resetStatus, setResetStatus] = useState('');
   const query = useQuery({ queryKey: ['admin-settings'], queryFn: ({ signal }) => settings(signal),
     enabled: role === 'admin' && !demoMode });
 
@@ -28,18 +29,20 @@ export function Admin({ role }: { role: Role }) {
     {tx('This page is available to the admin role.')}
   </Empty>;
 
-  async function save(action: () => Promise<unknown>, success: string) {
+  async function save(action: () => Promise<unknown>, success: string): Promise<string> {
     setBusy(true);
     setNotice('');
+    let message = success;
     try {
       await action();
       await query.refetch();
-      setNotice(success);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : tx('Change could not be saved.'));
+      message = error instanceof Error ? error.message : tx('Change could not be saved.');
     } finally {
       setBusy(false);
     }
+    setNotice(message);
+    return message;
   }
 
   if (query.isPending) return <p role="status">{tx('Loading administration settings...')}</p>;
@@ -84,13 +87,15 @@ export function Admin({ role }: { role: Role }) {
         <input aria-label={tx('Reset confirmation')} value={resetText}
           onChange={event => setResetText(event.target.value)}/></label>
       <button className="secondary danger" disabled={busy || resetText !== `RESET ${environment}`}
-        onClick={() => { void save(() => resetEnvironment(resetText), tx('Environment reset completed.'));
+        onClick={() => { setResetStatus(tx('Resetting the environment...'));
+          void save(() => resetEnvironment(resetText), tx('Environment reset completed.')).then(setResetStatus);
           setResetText(''); }}>{tx('Reset environment')}</button>
+      {resetStatus && <p role="status" className="reset-status">{resetStatus}</p>}
     </article>
   </>;
 }
 
-type Save = (action: () => Promise<unknown>, success: string) => Promise<void>;
+type Save = (action: () => Promise<unknown>, success: string) => Promise<unknown>;
 
 function Threshold({ label, configKey, value, busy, save }: {
   label: string; configKey: string; value: string | number; busy: boolean; save: Save;
