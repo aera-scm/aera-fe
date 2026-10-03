@@ -6,7 +6,9 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 // Signed-in states are files outside the repository:
 //   E2E_PLANNER_STATE  storage state of a planner or admin user
 //   E2E_APPROVER_STATE storage state of the assigned approver (optional; read-only checks)
-const reference = 'EXC-2026-0914';
+// The case number follows signal arrival order, so the reference case is found by material.
+const material = 'MAT-48219';
+let reference = '';
 const planner = process.env.E2E_PLANNER_STATE;
 const approver = process.env.E2E_APPROVER_STATE;
 const minutes = (count: number) => count * 60_000;
@@ -28,7 +30,10 @@ test('WP-8 reference scenario runs live up to approval and executes after it', a
 
   // AT-01: six actionable cases; the reference case ranks first.
   await page.goto('/board');
-  await expect(page.getByText(reference).first()).toBeVisible({ timeout: minutes(2) });
+  const first = page.locator('.case-table tbody tr').first().locator('.case-sub');
+  await expect(first).toContainText(material, { timeout: minutes(2) });
+  reference = /EXC-\d{4}-\d{4,}/.exec(await first.innerText())![0];
+  await expect(page.locator('.case-table tbody tr')).toHaveCount(6);
 
   // AT-03: the photographed quantity is UNCONFIRMED; the planner confirms 640.
   await expect.poll(() => caseStatus(page), { timeout: minutes(5), intervals: [10_000] }).toMatch(/waiting planner|awaiting approval|monitoring/);
