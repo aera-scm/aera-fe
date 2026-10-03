@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Workspace } from './pages';
 import type { Case, Signal } from './api/types.generated';
 import type { Role } from './api/client';
+import { planEvidence, planHash } from './api/plan.fixture';
 import './i18n';
 const auth = vi.hoisted(() => {
   vi.stubEnv('VITE_DATA_MODE', 'live');
@@ -30,17 +31,20 @@ const initialSignal: Signal = {
 let row: Case;
 let signal: Signal;
 let postStatus: number;
+let evidence: ReturnType<typeof planEvidence> | null;
 let query: QueryClient;
 let decide: ReturnType<typeof vi.fn<(value: 'APPROVED' | 'REJECTED' | null) => void>>;
 function posts() { return vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'POST'); }
 beforeEach(() => {
-  row = structuredClone(initial); signal = structuredClone(initialSignal); postStatus = 200;
+  row = structuredClone(initial); signal = structuredClone(initialSignal); postStatus = 200; evidence = null;
   decide = vi.fn<(value: 'APPROVED' | 'REJECTED' | null) => void>();
   auth.session.mockResolvedValue({ tokens: { idToken: { toString: () => 'test-session' } } });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = new URL(String(input)).pathname;
     if (init?.method === 'POST') {
+      if (postStatus === 409 && path.endsWith('/approval')) return new Response(JSON.stringify({ title: 'Decision refused', status: 409, currentPlanVersion: 1, currentPlanVersionHash: planHash }), { status: 409 });
       if (postStatus !== 200) return new Response('{}', { status: postStatus });
+      if (path.endsWith('/approval')) return new Response(JSON.stringify({ decision: JSON.parse(init.body as string).decision, planPartId: 'part-air', caseId: id }));
       if (path.endsWith('/confirm')) {
         signal.fields![0] = { ...signal.fields![0], value: JSON.parse(init.body as string).value, status: 'CONFIRMED', confirmedBy: 'user:server-planner' };
         return new Response(JSON.stringify(signal.fields![0]));
@@ -48,7 +52,7 @@ beforeEach(() => {
       if (path.endsWith('/runs')) return new Response(JSON.stringify({ runId: 'server-run' }), { status: 202 });
       if (path.endsWith('/rollback')) return new Response(JSON.stringify({ rollback: 'server-workflow' }), { status: 202 });
     }
-    if (path === `/cases/${id}`) return new Response(JSON.stringify({ case: row, signals: [signal] }));
+    if (path === `/cases/${id}`) return new Response(JSON.stringify({ case: row, signals: [signal], ...(evidence ?? { plan: null, route: null, execution: [] }) }));
     if (path === `/cases/${id}/trace`) return new Response(JSON.stringify([{ caseId: id, kind: 'CHECK', ts: initial.createdAt, detail: 'Server check refused action.', data: { title: 'Actual server check' } }]));
     throw new Error(`Unexpected endpoint ${path}`);
   }));
@@ -117,12 +121,97 @@ it.each(['triage', 'impact'])('shows sourced server values at %s without referen
   expect(screen.getByText('125 USD')).toHaveAttribute('data-source-ref', `api:/cases/${id}/case/rarUsd`);
   expect(screen.queryByText('$4.72M')).not.toBeInTheDocument();
 });
-it('keeps options and approvals honest, with no approval POST or local decision', async () => {
+function routed(status: Case['status'] = 'AWAITING_APPROVAL', deadlineAt?: string) {
+  row.status = status; row.stage = 'APPROVE'; row.planVersion = 1; row.tier = 2; evidence = planEvidence(id, deadlineAt);
+}
+function caseReads() { return vi.mocked(fetch).mock.calls.filter(([url, init]) => init?.method === 'GET' && new URL(String(url)).pathname === `/cases/${id}`).length; }
+it('FR-UI-07 shows option cards with sourced figures, check reasons and the chosen plan', async () => {
+  routed(); mount('options');
+  expect(await screen.findByRole('heading', { name: 'C · Move stock from plant 1020' })).toBeVisible();
+  expect(screen.getByText('Blocked · V-06')).toBeVisible();
+  expect(screen.getByText('Alternate supplier must be APPROVED: supplier 2000111 is PENDING')).toBeVisible();
+  expect(screen.getByText('600 PC')).toHaveAttribute('data-source-ref', 'SAP:stock/1020');
+  expect(screen.getByText('4,100 USD')).toHaveAttribute('data-source-ref', 'ratecard:STO-1');
+  expect(screen.getByText('Chosen plan: C + A')).toBeVisible();
+  expect(screen.getByText('0.91')).toHaveAttribute('data-source-ref', `api:/cases/${id}/plan/confidence`);
+  expect(screen.getByText(/consistent/i)).toBeVisible();
+  expect(posts()).toHaveLength(0);
+});
+it('FR-UI-07 says so when no plan is recorded, with no approval controls', async () => {
   row.status = 'AWAITING_APPROVAL'; row.stage = 'APPROVE';
   mount('approve', 'approver', true);
-  expect(await screen.findByText('Approval evidence unavailable')).toBeVisible();
+  expect(await screen.findByText('No route is recorded for the current plan version.')).toBeVisible();
   expect(screen.queryByRole('button', { name: /approve|reject/i })).not.toBeInTheDocument();
+  cleanup(); query.clear(); mount('options');
+  expect(await screen.findByText('No plan is recorded for the current plan version.')).toBeVisible();
   expect(posts()).toHaveLength(0); expect(decide).not.toHaveBeenCalled();
+});
+it('FR-RTE-02 FR-RTE-08 approval shows both parts, cost, RaR, checks, sources, undo and time left', async () => {
+  routed(); mount('approve', 'approver', true);
+  expect(await screen.findByText('Tier 1 · executes without approval')).toBeVisible();
+  expect(screen.getByText('Tier 2 · awaiting approval')).toBeVisible();
+  expect(screen.getAllByText('38,200 USD')[0]).toHaveAttribute('data-source-ref', 'ratecard:AIR-1');
+  expect(screen.getByText('125 USD')).toHaveAttribute('data-source-ref', `api:/cases/${id}/case/rarUsd`);
+  expect(screen.getAllByText('No blocking check failed on this part')).toHaveLength(2);
+  expect(screen.getByText('Not reversible once booked; the freight cost stays.')).toBeVisible();
+  expect(screen.getByText(/1 h 1[12] min left/)).toBeVisible();
+  expect(screen.getByText('approver@meridian-motors.example')).toBeVisible();
+});
+it('FR-UI-08 approve needs an explicit confirm and posts only decision, comment and hash', async () => {
+  routed(); mount('approve', 'approver', true);
+  fireEvent.click(await screen.findByRole('button', { name: 'Review & approve' }));
+  const dialog = within(screen.getByRole('dialog', { name: 'Confirm approval' }));
+  expect(dialog.getByText('Not reversible once booked; the freight cost stays.')).toBeVisible();
+  const submit = dialog.getByRole('button', { name: 'Approve plan part' });
+  expect(submit).toBeDisabled();
+  fireEvent.click(dialog.getByRole('checkbox'));
+  fireEvent.click(submit); fireEvent.click(submit);
+  await waitFor(() => expect(posts()).toHaveLength(1));
+  expect(posts()[0][0]).toBe(`https://api.example.test/cases/${id}/approval`);
+  expect(JSON.parse(posts()[0][1]?.body as string)).toEqual({ decision: 'APPROVED', comment: '', planVersionHash: planHash });
+  expect(await screen.findByText('Decision recorded. Follow refreshed server state and trace for the outcome.')).toBeVisible();
+  expect(decide).not.toHaveBeenCalled();
+});
+it('FR-RTE-03 rejection requires a reason', async () => {
+  routed(); mount('approve', 'approver', true);
+  fireEvent.click(await screen.findByRole('button', { name: 'Reject plan' }));
+  const dialog = within(screen.getByRole('dialog', { name: 'Confirm rejection' }));
+  fireEvent.click(dialog.getByRole('checkbox'));
+  const submit = dialog.getByRole('button', { name: 'Reject plan part' });
+  expect(submit).toBeDisabled();
+  fireEvent.change(dialog.getByLabelText('Reason (required)'), { target: { value: 'Too costly' } });
+  fireEvent.click(submit);
+  await waitFor(() => expect(posts()).toHaveLength(1));
+  expect(JSON.parse(posts()[0][1]?.body as string)).toEqual({ decision: 'REJECTED', comment: 'Too costly', planVersionHash: planHash });
+});
+it('FR-RTE-07 an expired part cannot be decided and says so', async () => {
+  routed('AWAITING_APPROVAL', '2026-11-01T09:00:00Z'); evidence!.route.parts![1].expired = true;
+  mount('approve', 'approver', true);
+  expect(await screen.findByText('Deadline passed; moved to the backup approver')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Review & approve' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Reject plan' })).toBeDisabled();
+});
+it('only an approver can decide; the server still decides', async () => {
+  routed(); mount('approve', 'planner');
+  expect(await screen.findByRole('button', { name: 'Review & approve' })).toBeDisabled();
+  expect(posts()).toHaveLength(0);
+});
+it('AT-16 a stale approval refreshes and shows the current plan', async () => {
+  routed(); postStatus = 409; mount('approve', 'approver', true);
+  fireEvent.click(await screen.findByRole('button', { name: 'Review & approve' }));
+  const dialog = within(screen.getByRole('dialog', { name: 'Confirm approval' }));
+  fireEvent.click(dialog.getByRole('checkbox'));
+  const before = caseReads();
+  fireEvent.click(dialog.getByRole('button', { name: 'Approve plan part' }));
+  expect(await screen.findByText('The plan changed. The current plan is shown; review it before deciding.')).toBeVisible();
+  await waitFor(() => expect(caseReads()).toBeGreaterThan(before));
+});
+it('FR-UI-10 execute view lists steps, SAP documents, undo and milestones', async () => {
+  routed('MONITORING'); mount('execute', 'approver');
+  expect(await screen.findByText('4500000777')).toHaveAttribute('data-source-ref', 'SAP:API_PURCHASEORDER_PROCESS_SRV/A_PurchaseOrder(4500000777)');
+  expect(screen.getByText('Undo: DELETE_STO_ITEM')).toBeVisible();
+  expect(screen.getByText('undo saved')).toBeVisible();
+  expect(screen.getByText('execution completed')).toBeVisible();
 });
 it('requires review for run requests and does not call an accepted request executed', async () => {
   mount('options');
