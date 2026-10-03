@@ -15,6 +15,8 @@ import { Empty, Heading, Source, Status, Notice } from './components';
 import { ProjectionPanel } from './projection';
 import { DialogueThread } from './dialogue';
 import { LiveWorkspace } from './live-workspace';
+import { caseDetail } from './api/case';
+import { TimeLeft, partCostSource, usd } from './plan-evidence';
 
 const stages = ['signal', 'triage', 'impact', 'options', 'approve', 'execute'];
 const money = (number: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(number);
@@ -64,7 +66,17 @@ function DemoWorkspace({ rows, role, decision, decide, ask, connected, approvalO
 
 export function Approvals({ rows, canApprove }: { rows: Case[]; canApprove: boolean }) {
   const pending = rows.filter(row => row.status === 'AWAITING_APPROVAL');
-  return <><Heading eyebrow={tx("HUMAN IN THE LOOP")} title={tx("Your judgement. The next step.")}/><p className="page-description">{tx("Decisions that need a person, with the evidence ready to review.")}</p>{!canApprove && <Notice>{tx("You can inspect the evidence.")} {demoMode ? tx("Switch the workspace role to approver to review this plan.") : tx("Approval actions require an authorised approver and connected approval endpoints.")}</Notice>}<div className="approval-grid">{pending.map(row => <article className="panel approval-tile" key={row.caseId}><div className="panel-top"><span className="case-icon violet"><ShieldCheck/></span><Status value={row.status}/></div><div className="eyebrow">{row.caseId}</div><h2>{row.materialDescription ?? row.material}</h2><p>{tx("Review the source evidence and proposed resolution before making a decision.")}</p>{demoMode && row.caseId === referenceId && <div className="approval-value"><Source sourceRef="ratecard:air-freight">{tx("$38,200")}</Source><span>{tx("Air freight · irreversible")}</span></div>}<Link className="primary" to={`/approvals/${row.caseId}`}>{tx("Review decision")} <ArrowUpRight size={17}/></Link></article>)}</div>{!pending.length && <Empty title={tx("You’re all caught up.")}>{tx("No cases are waiting for approval in this workspace.")}</Empty>}</>;
+  return <><Heading eyebrow={tx("HUMAN IN THE LOOP")} title={tx("Your judgement. The next step.")}/><p className="page-description">{tx("Decisions that need a person, with the evidence ready to review.")}</p>{!canApprove && <Notice>{tx("You can inspect the evidence.")} {demoMode ? tx("Switch the workspace role to approver to review this plan.") : tx("Approval actions require an authorised approver and connected approval endpoints.")}</Notice>}<div className="approval-grid">{pending.map(row => <article className="panel approval-tile" key={row.caseId}><div className="panel-top"><span className="case-icon violet"><ShieldCheck/></span><Status value={row.status}/></div><div className="eyebrow">{row.caseId}</div><h2>{row.materialDescription ?? row.material}</h2><p>{tx("Review the source evidence and proposed resolution before making a decision.")}</p>{demoMode ? row.caseId === referenceId && <div className="approval-value"><Source sourceRef="ratecard:air-freight">{tx("$38,200")}</Source><span>{tx("Air freight · irreversible")}</span></div> : <LiveApprovalValue caseId={row.caseId}/>}<Link className="primary" to={`/approvals/${row.caseId}`}>{tx("Review decision")} <ArrowUpRight size={17}/></Link></article>)}</div>{!pending.length && <Empty title={tx("You’re all caught up.")}>{tx("No cases are waiting for approval in this workspace.")}</Empty>}</>;
+}
+
+/** FR-RTE-07: the pending part's amount, time left and approver, read from the case detail. */
+function LiveApprovalValue({ caseId }: { caseId: string }) {
+  const detail = useQuery({ queryKey: ['case', caseId], queryFn: ({ signal }) => caseDetail(caseId, signal) });
+  const plan = detail.data?.plan;
+  const part = detail.data?.route?.parts?.find(item => item.tier === 2 && !item.decision);
+  if (detail.isError) return <p className="muted">{tx('Approval evidence could not be loaded.')}</p>;
+  if (!plan || !part) return null;
+  return <div className="approval-value"><Source sourceRef={partCostSource(caseId, plan, part)}>{usd(part.costUsd)}</Source><TimeLeft part={part}/>{!part.expired && <span>{part.approverId ?? tx('No approver available')}</span>}</div>;
 }
 
 export function Metrics({ rows }: { rows: Case[] }) {

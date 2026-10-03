@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { tx } from './tx';
 import { demoMode, type Role } from './api/client';
@@ -12,9 +12,15 @@ import { Empty, Heading, Notice, Source } from './components';
 const environment = import.meta.env.VITE_ENV_NAME ?? 'dev';
 
 export function Admin({ role }: { role: Role }) {
-  const [notice, setNotice] = useState('');
+  const [notice, setNoticeText] = useState('');
+  const [shown, setShown] = useState(0);
+  const noticeRef = useRef<HTMLDivElement>(null);
+  // The result of an action at the bottom of the page must not appear out of sight (FR-ADM-03).
+  useEffect(() => { if (shown) noticeRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); }, [shown]);
+  function setNotice(text: string) { setNoticeText(text); if (text) setShown(count => count + 1); }
   const [busy, setBusy] = useState(false);
   const [resetText, setResetText] = useState('');
+  const [resetStatus, setResetStatus] = useState('');
   const query = useQuery({ queryKey: ['admin-settings'], queryFn: ({ signal }) => settings(signal),
     enabled: role === 'admin' && !demoMode });
 
@@ -23,18 +29,21 @@ export function Admin({ role }: { role: Role }) {
     {tx('This page is available to the admin role.')}
   </Empty>;
 
-  async function save(action: () => Promise<unknown>, success: string) {
+  // `inline`: the caller shows the result next to its own button instead of the page notice.
+  async function save(action: () => Promise<unknown>, success: string, inline = false): Promise<string> {
     setBusy(true);
     setNotice('');
+    let message = success;
     try {
       await action();
       await query.refetch();
-      setNotice(success);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : tx('Change could not be saved.'));
+      message = error instanceof Error ? error.message : tx('Change could not be saved.');
     } finally {
       setBusy(false);
     }
+    if (!inline) setNotice(message);
+    return message;
   }
 
   if (query.isPending) return <p role="status">{tx('Loading administration settings...')}</p>;
@@ -47,7 +56,7 @@ export function Admin({ role }: { role: Role }) {
   return <>
     <Heading eyebrow={tx('WORKSPACE SETTINGS')} title={tx('Your rules. Always in control.')}/>
     <p className="page-description">{tx('Every change is checked and recorded in the audit trail.')}</p>
-    {notice && <Notice close={() => setNotice('')}>{notice}</Notice>}
+    <div ref={noticeRef}>{notice && <Notice close={() => setNotice('')}>{notice}</Notice>}</div>
     <article className="panel">
       <div className="panel-top"><div><h3>{tx('Advise-only mode')}</h3>
         <p className="muted">{tx('Stop new execution. Keep investigation and recommendations.')}</p>
@@ -79,13 +88,15 @@ export function Admin({ role }: { role: Role }) {
         <input aria-label={tx('Reset confirmation')} value={resetText}
           onChange={event => setResetText(event.target.value)}/></label>
       <button className="secondary danger" disabled={busy || resetText !== `RESET ${environment}`}
-        onClick={() => { void save(() => resetEnvironment(resetText), tx('Environment reset completed.'));
+        onClick={() => { setResetStatus(tx('Resetting the environment...'));
+          void save(() => resetEnvironment(resetText), tx('Environment reset completed.'), true).then(setResetStatus);
           setResetText(''); }}>{tx('Reset environment')}</button>
+      {resetStatus && <p role="status" className="reset-status">{resetStatus}</p>}
     </article>
   </>;
 }
 
-type Save = (action: () => Promise<unknown>, success: string) => Promise<void>;
+type Save = (action: () => Promise<unknown>, success: string) => Promise<unknown>;
 
 function Threshold({ label, configKey, value, busy, save }: {
   label: string; configKey: string; value: string | number; busy: boolean; save: Save;
