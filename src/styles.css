@@ -306,3 +306,5 @@ html { scroll-padding-bottom: 100px; }
   .live-workspace .approval-actions { flex-direction: column-reverse; }
   .live-workspace .approval-actions button { width: 100%; }
 }
+.approval-value .time-left { font-weight: 600; color: #4d6a91; }
+.approval-value .time-left.late { color: #bc626b; }
