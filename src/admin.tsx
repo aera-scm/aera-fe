@@ -29,7 +29,8 @@ export function Admin({ role }: { role: Role }) {
     {tx('This page is available to the admin role.')}
   </Empty>;
 
-  async function save(action: () => Promise<unknown>, success: string): Promise<string> {
+  // `inline`: the caller shows the result next to its own button instead of the page notice.
+  async function save(action: () => Promise<unknown>, success: string, inline = false): Promise<string> {
     setBusy(true);
     setNotice('');
     let message = success;
@@ -41,7 +42,7 @@ export function Admin({ role }: { role: Role }) {
     } finally {
       setBusy(false);
     }
-    setNotice(message);
+    if (!inline) setNotice(message);
     return message;
   }
 
@@ -88,7 +89,7 @@ export function Admin({ role }: { role: Role }) {
           onChange={event => setResetText(event.target.value)}/></label>
       <button className="secondary danger" disabled={busy || resetText !== `RESET ${environment}`}
         onClick={() => { setResetStatus(tx('Resetting the environment...'));
-          void save(() => resetEnvironment(resetText), tx('Environment reset completed.')).then(setResetStatus);
+          void save(() => resetEnvironment(resetText), tx('Environment reset completed.'), true).then(setResetStatus);
           setResetText(''); }}>{tx('Reset environment')}</button>
       {resetStatus && <p role="status" className="reset-status">{resetStatus}</p>}
     </article>

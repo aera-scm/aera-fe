@@ -32,3 +32,12 @@ it('FR-RTE-07 a live approval tile shows the sourced amount, the time left and t
   expect(screen.getByText('approver@meridian-motors.example')).toBeVisible();
   expect(vi.mocked(fetch).mock.calls.every(([, init]) => (init?.method ?? 'GET') === 'GET')).toBe(true);
 });
+it('FR-RTE-07 an expired part names no approver on its tile', async () => {
+  const evidence = planEvidence(id, '2026-11-01T09:00:00Z');
+  evidence.route.parts![1].expired = true;
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ case: row, signals: [], ...evidence })));
+  query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={query}><MemoryRouter><Approvals rows={[row]} canApprove/></MemoryRouter></QueryClientProvider>);
+  expect(await screen.findByText('Deadline passed; re-verification required')).toBeVisible();
+  expect(screen.queryByText('approver@meridian-motors.example')).not.toBeInTheDocument();
+});

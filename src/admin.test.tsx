@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Admin } from './admin';
 
@@ -41,18 +41,20 @@ describe('FR-UI-11 live administration', () => {
     expect(api.resetEnvironment).toHaveBeenCalledWith('RESET dev');
   });
 
-  it('FR-ADM-03 brings the result of every reset into view, also when repeated', async () => {
+  it('FR-ADM-03 shows the result of every reset once, next to its button, also when repeated', async () => {
     const scrolled = vi.fn();
     Element.prototype.scrollIntoView = scrolled;
     api.settings.mockResolvedValue({ config: { KILL_SWITCH: 'off' }, rateCard: [], approverLimits: [] });
     api.resetEnvironment.mockResolvedValue({});
     mount();
-    for (const attempt of [1, 2]) {
+    for (let round = 0; round < 2; round += 1) {
       fireEvent.change(await screen.findByLabelText('Reset confirmation'), { target: { value: 'RESET dev' } });
       fireEvent.click(screen.getByRole('button', { name: 'Reset environment' }));
       const panel = screen.getByRole('heading', { name: 'Reset environment' }).closest('article')!;
       expect(await within(panel as HTMLElement).findByRole('status')).toHaveTextContent('Environment reset completed.');
-      await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(attempt));
+      // The result shows next to the button that was pressed, once, without moving the page.
+      expect(screen.getAllByText('Environment reset completed.')).toHaveLength(1);
+      expect(scrolled).not.toHaveBeenCalled();
     }
   });
 });

@@ -76,7 +76,7 @@ function LiveApprovalValue({ caseId }: { caseId: string }) {
   const part = detail.data?.route?.parts?.find(item => item.tier === 2 && !item.decision);
   if (detail.isError) return <p className="muted">{tx('Approval evidence could not be loaded.')}</p>;
   if (!plan || !part) return null;
-  return <div className="approval-value"><Source sourceRef={partCostSource(caseId, plan, part)}>{usd(part.costUsd)}</Source><TimeLeft part={part}/><span>{part.approverId ?? tx('No approver available')}</span></div>;
+  return <div className="approval-value"><Source sourceRef={partCostSource(caseId, plan, part)}>{usd(part.costUsd)}</Source><TimeLeft part={part}/>{!part.expired && <span>{part.approverId ?? tx('No approver available')}</span>}</div>;
 }
 
 export function Metrics({ rows }: { rows: Case[] }) {
