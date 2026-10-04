@@ -58,8 +58,8 @@ export function Chat({ close, caseId = referenceId }: { close: () => void; caseI
       if (demoMode) {
         answer = /approve|execute|bypass|ignore|set.*tier/i.test(text) ? tx("Chat cannot approve or execute a plan, change tiers, or bypass checks. Review the plan in Approvals using an authorised approver role.") : /replan|budget|constraint/i.test(text) ? tx("Your constraint would start a new plan in a connected workspace. This demo does not run a model or change the proposed plan.") : tx("In the reference scenario, the supplier is late. An inter-plant transfer bridges the immediate gap, followed by air freight for the ready partial shipment. Review Impact for the source figures and Options for costs. Air freight needs a named approver.");
       } else {
-        await request(`/cases/${encodeURIComponent(caseId)}/chat`, { message: text });
-        answer = tx("Your question was submitted. Follow the case trace for the response.");
+        const response = await request<{ reply?: unknown }>(`/cases/${encodeURIComponent(caseId)}/chat`, { message: text });
+        answer = typeof response.reply === 'string' && response.reply.trim() ? response.reply : tx("No chat reply was returned. Follow the case trace for the outcome.");
       }
       setMessages(m => [...m, { mine: false, text: answer }]);
     } catch (error) { setMessages(m => [...m, { mine: false, text: error instanceof Error ? error.message : tx("Could not send your message.") }]); }

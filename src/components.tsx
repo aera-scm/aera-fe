@@ -1,9 +1,20 @@
 import { tx } from './tx';
-import { type ReactNode } from 'react';
+import { type ReactNode, type SyntheticEvent } from 'react';
 import { Database, X, ShieldCheck } from 'lucide-react';
 
+function alignSourceTooltip(event: SyntheticEvent<HTMLSpanElement>) {
+  const tooltip = event.currentTarget.querySelector<HTMLElement>('.source-tooltip');
+  if (!tooltip) return;
+  window.requestAnimationFrame(() => {
+    tooltip.style.transform = '';
+    const bounds = tooltip.getBoundingClientRect();
+    // Mobile innerWidth expands with overflowing content; clientWidth stays at the layout viewport.
+    const left = Math.max(8, Math.min(bounds.left, document.documentElement.clientWidth - bounds.width - 8));
+    tooltip.style.transform = `translateX(${left - bounds.left}px)`;
+  });
+}
 export function Source({ children, sourceRef }: { children: ReactNode; sourceRef: string }) {
-  return <span className="sourced" tabIndex={0} title={sourceRef} data-source-ref={sourceRef}>{children}<span className="source-tooltip"><Database size={12}/>{sourceRef}</span></span>;
+  return <span className="sourced" tabIndex={0} title={sourceRef} data-source-ref={sourceRef} onFocus={alignSourceTooltip} onMouseEnter={alignSourceTooltip}>{children}<span className="source-tooltip"><Database size={12}/>{sourceRef}</span></span>;
 }
 export function Brand() { return <span className="brand"><span className="brand-icon"><img src="/brand/logo.png" alt=""/></span><span>{tx("AERA")}<span className="brand-star">{tx("✦")}</span></span></span>; }
 export function Status({ value }: { value: string }) {

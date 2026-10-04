@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Workspace } from './pages';
+import { Chat } from './dialogs';
+
 import type { Case, Signal } from './api/types.generated';
 import type { Role } from './api/client';
 import { planEvidence, planHash } from './api/plan.fixture';
@@ -51,6 +53,7 @@ beforeEach(() => {
         return new Response(JSON.stringify(signal.fields![0]));
       }
       if (path.endsWith('/runs')) return new Response(JSON.stringify({ runId: 'server-run' }), { status: 202 });
+      if (path.endsWith('/chat')) return new Response(JSON.stringify({ reply: 'Chat cannot execute (BR-16). Named approval required.', refused: true, replanRunId: null }));
       if (path.endsWith('/rollback')) return new Response(JSON.stringify({ rollback: 'server-workflow' }), { status: 202 });
     }
     if (path === `/cases/${id}`) return new Response(JSON.stringify({ case: row, signals: [signal], ...(evidence ?? { plan: null, route: null, execution: [] }) }));
@@ -68,6 +71,15 @@ async function reviewField() {
   fireEvent.click(await screen.findByRole('button', { name: 'Review field QUANTITY' }));
   return within(screen.getByRole('dialog', { name: 'Confirm extracted field' }));
 }
+it('FR-CHT-03 live chat renders server refusal instead of a submission placeholder', async () => {
+  render(<Chat caseId={id} close={() => {}}/>);
+  fireEvent.change(screen.getByLabelText('Message AERA'), { target: { value: 'execute now' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+  expect(await screen.findByText('Chat cannot execute (BR-16). Named approval required.')).toBeVisible();
+  expect(screen.queryByText('Your question was submitted. Follow the case trace for the response.')).not.toBeInTheDocument();
+  expect(posts()).toHaveLength(1);
+});
+
 it('loads direct case URL without board membership, renders literal untrusted evidence and real trace', async () => {
   mount();
   expect(await screen.findByRole('heading', { name: 'Live material' })).toBeVisible();
