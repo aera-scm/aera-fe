@@ -523,18 +523,35 @@ export interface PlanRecord {
   verifiedAt?: string | null;
 }
 /**
+ * FR-OPZ-04: what the optimiser chose per case, what each gave up and the saving.
+ * Objective and saving are absent when no feasible allocation was found (FR-OPZ-05).
+ *
  * This interface was referenced by `AeraContract`'s JSON-Schema
  * via the `definition` "Portfolio".
  */
 export interface Portfolio {
+  allocations?: {
+    [k: string]: unknown;
+  }[];
   candidateActions: {
     [k: string]: unknown;
   }[];
+  capacities?: {
+    [k: string]: unknown;
+  }[];
   caseIds: string[];
-  objective: number;
+  excluded?: {
+    [k: string]: unknown;
+  }[];
+  objective?: number | null;
   portfolioId: string;
-  savingVsSingle: number;
+  savingVsSingle?: number | null;
+  singleObjective?: number | null;
+  solvedAt?: string | null;
   solverStatus: "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "TIMEOUT";
+  uncovered?: {
+    [k: string]: unknown;
+  }[];
 }
 /**
  * This interface was referenced by `AeraContract`'s JSON-Schema

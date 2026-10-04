@@ -37,19 +37,28 @@ async function requestMethod<T>(method: 'GET' | 'POST' | 'PUT', path: string, bo
 export class ApiError extends Error {
   readonly currentPlanVersion?: number;
   readonly currentPlanVersionHash?: string;
-  constructor(readonly status: number, message: string, current: { currentPlanVersion?: number; currentPlanVersionHash?: string } = {}) {
+  readonly reason?: RefusalReason;
+  constructor(readonly status: number, message: string, current: { currentPlanVersion?: number; currentPlanVersionHash?: string; reason?: RefusalReason } = {}) {
     super(message);
     this.currentPlanVersion = current.currentPlanVersion;
     this.currentPlanVersionHash = current.currentPlanVersionHash;
+    this.reason = current.reason;
   }
 }
+export type RefusalReason = 'KILL_SWITCH' | 'ALREADY_DECIDED';
+const REFUSALS: Record<string, RefusalReason> = {
+  'kill switch enabled or unavailable': 'KILL_SWITCH',
+  'approval already decided': 'ALREADY_DECIDED',
+};
 async function conflict(response: Response) {
   const body: unknown = await response.json().catch(() => null);
   if (!body || typeof body !== 'object') return {};
-  const { currentPlanVersion: version, currentPlanVersionHash: hash } = body as Record<string, unknown>;
+  const { currentPlanVersion: version, currentPlanVersionHash: hash, detail } = body as Record<string, unknown>;
   return {
     currentPlanVersion: Number.isInteger(version) ? version as number : undefined,
     currentPlanVersionHash: typeof hash === 'string' && /^[0-9a-f]{64}$/.test(hash) ? hash : undefined,
+    // Only exact, server-authored reasons are recognised; any other text is never shown.
+    reason: typeof detail === 'string' ? REFUSALS[detail] : undefined,
   };
 }
 export function isCase(value: unknown): value is Case {

@@ -35,17 +35,18 @@ let signal: Signal;
 let postStatus: number;
 let evidence: ReturnType<typeof planEvidence> | null;
 let conflictHash: string;
+let conflictDetail: string | undefined;
 let query: QueryClient;
 let decide: ReturnType<typeof vi.fn<(value: 'APPROVED' | 'REJECTED' | null) => void>>;
 function posts() { return vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'POST'); }
 beforeEach(() => {
-  row = structuredClone(initial); signal = structuredClone(initialSignal); postStatus = 200; evidence = null; conflictHash = 'c'.repeat(64);
+  row = structuredClone(initial); signal = structuredClone(initialSignal); postStatus = 200; evidence = null; conflictHash = 'c'.repeat(64); conflictDetail = undefined;
   decide = vi.fn<(value: 'APPROVED' | 'REJECTED' | null) => void>();
   auth.session.mockResolvedValue({ tokens: { idToken: { toString: () => 'test-session' } } });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = new URL(String(input)).pathname;
     if (init?.method === 'POST') {
-      if (postStatus === 409 && path.endsWith('/approval')) return new Response(JSON.stringify({ title: 'Decision refused', status: 409, currentPlanVersion: 1, currentPlanVersionHash: conflictHash }), { status: 409 });
+      if (postStatus === 409 && path.endsWith('/approval')) return new Response(JSON.stringify({ title: 'Decision refused', status: 409, currentPlanVersion: 1, currentPlanVersionHash: conflictHash, detail: conflictDetail }), { status: 409 });
       if (postStatus !== 200) return new Response('{}', { status: postStatus });
       if (path.endsWith('/approval')) return new Response(JSON.stringify({ decision: JSON.parse(init.body as string).decision, planPartId: 'part-air', caseId: id }));
       if (path.endsWith('/confirm')) {
@@ -234,6 +235,15 @@ it('AT-16 a refusal of the current plan says the decision was refused, not that 
   fireEvent.click(dialog.getByRole('button', { name: 'Approve plan part' }));
   expect(await screen.findByText('The decision was refused. The refreshed case shows the current state.')).toBeVisible();
   expect(screen.queryByText(/The plan changed/)).not.toBeInTheDocument();
+});
+it('AT-15 a decision refused by the kill switch says so; unknown server text is never shown', async () => {
+  routed(); postStatus = 409; conflictHash = planHash; conflictDetail = 'kill switch enabled or unavailable'; mount('approve', 'approver', true);
+  fireEvent.click(await screen.findByRole('button', { name: 'Review & approve' }));
+  const dialog = within(screen.getByRole('dialog', { name: 'Confirm approval' }));
+  fireEvent.click(dialog.getByRole('checkbox'));
+  fireEvent.click(dialog.getByRole('button', { name: 'Approve plan part' }));
+  expect(await screen.findByText(/kill switch on/)).toBeVisible();
+  expect(screen.queryByText('kill switch enabled or unavailable')).not.toBeInTheDocument();
 });
 it('FR-UI-10 execute view lists steps, SAP documents, undo and milestones', async () => {
   routed('MONITORING'); mount('execute', 'approver');

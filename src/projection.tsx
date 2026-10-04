@@ -19,18 +19,23 @@ function chartRows(base: PlantProjection, revised: PlantProjection, long: boolea
   }));
 }
 
-export function ProjectionPanel({ caseId }: { caseId: string }) {
+export interface ProjectionChoice { id: string; label: string; transfer?: { qty: number; fromPlant: string } }
+const demoChoices: ProjectionChoice[] = [{ id: 'C', label: 'Transfer C', transfer: { qty: 600, fromPlant: '1020' } }, { id: 'A', label: 'Air freight A' }];
+
+/** FR-SIM-01..03. Live: the case's own plant and plan options; demo: the reference scenario. */
+export function ProjectionPanel({ caseId, home = '1010', choices = demoChoices }: { caseId: string; home?: string; choices?: ProjectionChoice[] }) {
+  const transfer = choices.find(choice => choice.transfer);
   const [option, setOption] = useState('plan');
-  const [plant, setPlant] = useState('1010');
+  const [plant, setPlant] = useState(home);
   const [long, setLong] = useState(false);
-  const [quantity, setQuantity] = useState('600');
-  const [donor, setDonor] = useState('1020');
+  const [quantity, setQuantity] = useState(String(transfer?.transfer?.qty ?? 600));
+  const [donor, setDonor] = useState(transfer?.transfer?.fromPlant ?? '1020');
   const [whatIfResult, setWhatIfResult] = useState<WhatIfResponse | null>(null);
   const query = useQuery({
     queryKey: ['projection', caseId, option],
     queryFn: ({ signal }) => projection(caseId, option === 'plan' ? undefined : option, signal),
   });
-  const simulation = useMutation({ mutationFn: () => whatIf(caseId, 'C', { qty: Number(quantity), fromPlant: donor }) });
+  const simulation = useMutation({ mutationFn: () => whatIf(caseId, transfer?.id ?? 'C', { qty: Number(quantity), fromPlant: donor }) });
   const displayed = whatIfResult ?? query.data;
   const base = displayed?.baseline[plant];
   const revised = displayed?.projection[plant];
@@ -41,8 +46,8 @@ export function ProjectionPanel({ caseId }: { caseId: string }) {
   return <article className="panel projection-panel" aria-label={tx("Stock projection")}>
     <div className="panel-top"><div><h3>{tx("Stock through time")}</h3><p className="muted">{tx("Compare current path with a proposed recovery. Shaded periods mark line stops.")}</p></div>{!demoMode && <span className="badge blue">{tx("SAP-backed projection")}</span>}</div>
     <div className="projection-controls">
-      <label>{tx("Option")}<select aria-label={tx("Projection option")} value={option} onChange={event => { setOption(event.target.value); setPlant('1010'); setWhatIfResult(null); }}><option value="plan">{tx("Chosen plan")}</option><option value="C">{tx("Transfer C")}</option><option value="A">{tx("Air freight A")}</option></select></label>
-      <label>{tx("Plant")}<select aria-label={tx("Projection plant")} value={plant} onChange={event => setPlant(event.target.value)}>{Object.keys(displayed?.projection ?? { '1010': true }).map(id => <option key={id} value={id}>{tx("Plant")} {id}</option>)}</select></label>
+      <label>{tx("Option")}<select aria-label={tx("Projection option")} value={option} onChange={event => { setOption(event.target.value); setPlant(home); setWhatIfResult(null); }}><option value="plan">{tx("Chosen plan")}</option>{choices.map(choice => <option key={choice.id} value={choice.id}>{tx(choice.label)}</option>)}</select></label>
+      <label>{tx("Plant")}<select aria-label={tx("Projection plant")} value={plant} onChange={event => setPlant(event.target.value)}>{Object.keys(displayed?.projection ?? { [home]: true }).map(id => <option key={id} value={id}>{tx("Plant")} {id}</option>)}</select></label>
       <div className="projection-range" role="group" aria-label={tx("Projection range")}><button className={!long ? 'selected' : ''} onClick={() => setLong(false)}>{tx("72 hours")}</button><button className={long ? 'selected' : ''} onClick={() => setLong(true)}>{tx("30 days")}</button></div>
     </div>
     {query.isPending && <p role="status">{tx("Calculating projection...")}</p>}
@@ -60,7 +65,7 @@ export function ProjectionPanel({ caseId }: { caseId: string }) {
       <div className="projection-legend"><span><i className="baseline-line"/> {tx("Baseline")}</span><span><i className="projected-line"/> {tx("With option")}</span><span><i className="stop-swatch"/> {tx("Line stop")}</span></div>
       <div className="projection-facts"><span>{tx("First stock-out")} <Source sourceRef={refs.join(' | ')}>{first ? new Date(first).toLocaleString() : tx("None in 30 days")}</Source></span><span>{tx("Line-stop windows")} <Source sourceRef={refs.join(' | ')}>{revised.lineStops.length}</Source></span><span>{tx("Orders affected")} <Source sourceRef={refs.join(' | ')}>{[...new Set(revised.lineStops.flatMap(window => window.ordersAffected))].join(', ') || 'None'}</Source></span></div>
     </>}
-    <div className="whatif-editor"><div><h4>{tx("Try another transfer")}</h4><p>{tx("Change quantity or donor plant. This recalculates checks and projection; plan of record stays intact.")}</p></div><label>{tx("Quantity")}<input aria-label={tx("What-if quantity")} type="number" min="1" step="1" value={quantity} onChange={event => setQuantity(event.target.value)}/></label><label>{tx("Donor plant")}<input aria-label={tx("What-if donor plant")} value={donor} onChange={event => setDonor(event.target.value)} maxLength={10}/></label><button className="secondary" disabled={simulation.isPending || !Number.isInteger(Number(quantity)) || Number(quantity) <= 0 || !donor.trim()} onClick={() => { simulation.mutate(undefined, { onSuccess: result => { setWhatIfResult(result); setPlant('1010'); }, onError: () => setWhatIfResult(null) }); }}>{tx("Run what-if")}</button></div>
+    <div className="whatif-editor"><div><h4>{tx("Try another transfer")}</h4><p>{tx("Change quantity or donor plant. This recalculates checks and projection; plan of record stays intact.")}</p></div><label>{tx("Quantity")}<input aria-label={tx("What-if quantity")} type="number" min="1" step="1" value={quantity} onChange={event => setQuantity(event.target.value)}/></label><label>{tx("Donor plant")}<input aria-label={tx("What-if donor plant")} value={donor} onChange={event => setDonor(event.target.value)} maxLength={10}/></label><button className="secondary" disabled={!transfer || simulation.isPending || !Number.isInteger(Number(quantity)) || Number(quantity) <= 0 || !donor.trim()} onClick={() => { simulation.mutate(undefined, { onSuccess: result => { setWhatIfResult(result); setPlant(home); }, onError: () => setWhatIfResult(null) }); }}>{tx("Run what-if")}</button></div>
     {simulation.isError && <p role="alert">{simulation.error.message}</p>}
     {whatIfResult && <div className="whatif-result"><Notice>{tx("What-if only. Plan version")} {whatIfResult.planOfRecord.version} {tx("remains unchanged.")}</Notice>{whatIfResult.checks.length ? <ul>{whatIfResult.checks.map(check => <li key={check.checkId}><strong>{check.checkId}</strong> {check.passed ? tx("Pass") : tx("Blocked")} {tx("-")} {check.detail}</li>)}</ul> : <p className="fine-print">{tx("Synthetic projection only. Verifier checks require a connected workspace.")}</p>}</div>}
     {refs.length > 0 && <p className="fine-print">{tx("Projection sources:")} {refs.map(ref => <Source key={ref} sourceRef={ref}>{ref}</Source>)}</p>}

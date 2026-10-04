@@ -11,6 +11,8 @@ import { caseDetail, confirmField, decideApproval, rollbackCase, startRun } from
 import type { Case, ExtractedField, Signal } from './api/types.generated';
 import { Empty, Heading, Notice, Source, Status } from './components';
 import { tx } from './tx';
+import { PortfolioPanel } from './portfolio';
+import { ProjectionPanel } from './projection';
 import { ExecutionList, PartEvidence, PlanOptions, TimeLeft, UndoSummary, partCostSource, partOptions, usd } from './plan-evidence';
 const stages = ['signal', 'triage', 'impact', 'options', 'approve', 'execute'];
 const startable = ['TRIAGED', 'WAITING_PLANNER', 'WAITING_SUPPLIER', 'PLAN_PROPOSED', 'REJECTED', 'ESCALATED'];
@@ -70,9 +72,14 @@ export function LiveWorkspace({ role, ask, connected, approvalOnly = false }: { 
       setReview(null); setChecked(false);
       // AT-16: a stale decision is refused; the refreshed case shows the current plan.
       if (action.kind === 'approval' && error instanceof ApiError && error.status === 409) {
-        setNotice(error.currentPlanVersionHash && error.currentPlanVersionHash !== action.planVersionHash
-          ? tx('The plan changed. The current plan is shown; review it before deciding.')
-          : tx('The decision was refused. The refreshed case shows the current state.'));
+        // FR-ADM-02 / AT-15: the kill switch refuses every decision with a clear reason.
+        setNotice(error.reason === 'KILL_SWITCH'
+          ? tx('Execution is paused: an administrator turned the kill switch on. Your decision was not recorded and nothing was executed.')
+          : error.reason === 'ALREADY_DECIDED'
+            ? tx('This approval was already decided. The refreshed case shows the outcome.')
+            : error.currentPlanVersionHash && error.currentPlanVersionHash !== action.planVersionHash
+              ? tx('The plan changed. The current plan is shown; review it before deciding.')
+              : tx('The decision was refused. The refreshed case shows the current state.'));
       }
     },
     onSettled: async () => { await refresh(); submitting.current = false; },
@@ -101,7 +108,7 @@ export function LiveWorkspace({ role, ask, connected, approvalOnly = false }: { 
           {mutation.isError && <p role="alert">{mutation.error.message}</p>}
           {stage === 'signal' && <><div className="section-title"><h2>{tx('Original signals and extracted fields')}</h2><p>{tx('Supplier content is evidence, not permission to act. Review before confirming.')}</p></div>{detail.data!.signals.length ? detail.data!.signals.map(signal => <SignalCard key={signal.signalId} signal={signal} caseId={id} disabled={!fresh || !planner || mutation.isPending} review={field => openReview({ kind: 'field', field, signalId: signal.signalId, updatedAt: row.updatedAt })}/>) : <Empty title={tx('No linked signals returned')}>{tx('No supplier evidence is substituted from the demo.')}</Empty>}</>}
           {(stage === 'triage' || stage === 'impact') && <><article className="panel"><h2>{stage === 'triage' ? tx('Stored triage assessment') : tx('Source-backed impact')}</h2><p className="fine-print">{tx('Case values below are stored server results. Evidence figures retain their original source references.')}</p><dl className="details">{[['Revenue at risk', 'rarUsd', row.rarUsd, 'USD'], ['Priority score', 'priorityScore', row.priorityScore, ''], ['Stock-out at', 'stockoutAt', row.stockoutAt, ''], ['Days late', 'daysLate', row.daysLate, 'days']].map(([label, field, figure, unit]) => <div key={String(field)}><dt>{tx(String(label))}</dt><dd>{figure == null ? tx('Not returned by server') : <Source sourceRef={caseSource(id, String(field))}>{String(figure)} {unit}</Source>}</dd></div>)}</dl></article><EvidenceFigures row={row}/></>}
-          {stage === 'options' && <><div className="section-title"><h2>{tx('Resolution options')}</h2><p>{tx('Options, checks and confidence are the stored Verifier results for the current plan version.')}</p></div>{plan ? <PlanOptions caseId={id} plan={plan}/> : <article className="panel"><Status value={row.status}/><p>{tx('No plan is recorded for the current plan version.')}</p><EvidenceFigures row={row}/></article>}</>}
+          {stage === 'options' && <><div className="section-title"><h2>{tx('Resolution options')}</h2><p>{tx('Options, checks and confidence are the stored Verifier results for the current plan version.')}</p></div>{plan ? <PlanOptions caseId={id} plan={plan}/> : <article className="panel"><Status value={row.status}/><p>{tx('No plan is recorded for the current plan version.')}</p><EvidenceFigures row={row}/></article>}{plan && <ProjectionPanel caseId={id} home={row.plant} choices={plan.plan.options.map(option => { const sto = option.actions.length === 1 && option.actions[0].type === 'CREATE_STO' ? option.actions[0] : null; return { id: option.id, label: `${option.id}: ${option.name}`, transfer: sto ? { qty: Number(sto.qty), fromPlant: String(sto.fromPlant) } : undefined }; })}/>}<PortfolioPanel caseId={id}/></>}
           {stage === 'approve' && (plan && route ? <><article className="panel approval-summary"><div className="panel-top"><h2>{tx('Approval')}</h2><Status value={row.status}/></div>
             <dl className="details"><div><dt>{tx('Chosen plan')}</dt><dd>{plan.plan.chosen.join(' + ')}</dd></div><div><dt>{tx('Total cost')}</dt><dd><Source sourceRef={`api:/cases/${encodeURIComponent(id)}/plan/totalCostUsd`}>{usd(plan.plan.totalCostUsd)}</Source></dd></div><div><dt>{tx('Revenue at risk')}</dt><dd>{row.rarUsd == null ? tx('Not returned by server') : <Source sourceRef={caseSource(id, 'rarUsd')}>{usd(row.rarUsd)}</Source>}</dd></div><div><dt>{tx('Plan confidence (BR-18)')}</dt><dd>{plan.confidence == null ? tx('Not verified yet') : <Source sourceRef={`api:/cases/${encodeURIComponent(id)}/plan/confidence`}>{String(plan.confidence)}</Source>}</dd></div><div><dt>{tx('Route')}</dt><dd>{tx('Tier')} {route.tier}{route.reason ? ` · ${route.reason}` : ''}</dd></div></dl>
             {route.tier === 2 && <div className="approval-actions"><button className="secondary danger" disabled={!canDecide || mutation.isPending} onClick={() => openReview({ kind: 'approval', decision: 'REJECTED', planVersionHash: route.planVersionHash, planPartId: pending!.planPartId, updatedAt: row.updatedAt })}>{tx('Reject plan')}</button><button className="primary" disabled={!canDecide || mutation.isPending} onClick={() => openReview({ kind: 'approval', decision: 'APPROVED', planVersionHash: route.planVersionHash, planPartId: pending!.planPartId, updatedAt: row.updatedAt })}>{tx('Review & approve')}</button></div>}
