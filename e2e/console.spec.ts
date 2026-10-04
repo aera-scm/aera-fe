@@ -264,3 +264,51 @@ test('footer stays at viewport bottom without covering last page content', async
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 });
+test('FR-IMP-03 source tooltips stay readable on phone approval and evidence screens', async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.setViewportSize({ width: 375, height: 812 });
+  for (const route of ['/approvals/' + referenceId, '/board', '/cases/' + referenceId + '/impact', '/cases/' + referenceId + '/options', '/metrics', '/admin']) {
+    await page.goto(route);
+    if (route === '/admin') await page.getByLabel('Workspace role').selectOption('admin');
+    await expect(page.locator('h1').first()).toBeVisible();
+    const sources = page.locator('[data-source-ref]');
+    expect(await sources.count()).toBeGreaterThan(0);
+    for (const source of await sources.all()) {
+      if (!await source.isVisible()) continue;
+      await source.scrollIntoViewIfNeeded();
+      await source.focus();
+      const tooltip = source.locator('.source-tooltip');
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toHaveText(await source.getAttribute('data-source-ref') ?? '');
+      const fits = async () => {
+        const bounds = await tooltip.boundingBox();
+        return bounds !== null && bounds.x >= 0 && bounds.x + bounds.width <= 375;
+      };
+      await expect.poll(fits).toBe(true);
+      await source.evaluate(element => (element as HTMLElement).blur());
+      if (testInfo.project.name !== 'phone') {
+        await source.hover();
+        await expect(tooltip).toBeVisible();
+        await expect.poll(fits).toBe(true);
+        await page.mouse.move(0, 0);
+      }
+    }
+  }
+  await page.goto('/approvals/' + referenceId);
+  await page.getByLabel('Workspace role').selectOption('approver');
+  await page.getByRole('button', { name: 'Review & approve' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Confirm demo approval' });
+  await expect(dialog.getByRole('button', { name: 'Confirm approval' })).toBeDisabled();
+  const dialogSource = dialog.locator('[data-source-ref]').first();
+  if (testInfo.project.name === 'phone') await dialogSource.tap();
+  else await dialogSource.focus();
+  await expect(dialogSource.locator('.source-tooltip')).toBeVisible();
+  await expect.poll(async () => {
+    const bounds = await dialogSource.locator('.source-tooltip').boundingBox();
+    return bounds !== null && bounds.x >= 0 && bounds.x + bounds.width <= 375;
+  }).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('approval-sources.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
