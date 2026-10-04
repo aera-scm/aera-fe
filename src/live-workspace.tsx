@@ -72,9 +72,14 @@ export function LiveWorkspace({ role, ask, connected, approvalOnly = false }: { 
       setReview(null); setChecked(false);
       // AT-16: a stale decision is refused; the refreshed case shows the current plan.
       if (action.kind === 'approval' && error instanceof ApiError && error.status === 409) {
-        setNotice(error.currentPlanVersionHash && error.currentPlanVersionHash !== action.planVersionHash
-          ? tx('The plan changed. The current plan is shown; review it before deciding.')
-          : tx('The decision was refused. The refreshed case shows the current state.'));
+        // FR-ADM-02 / AT-15: the kill switch refuses every decision with a clear reason.
+        setNotice(error.reason === 'KILL_SWITCH'
+          ? tx('Execution is paused: an administrator turned the kill switch on. Your decision was not recorded and nothing was executed.')
+          : error.reason === 'ALREADY_DECIDED'
+            ? tx('This approval was already decided. The refreshed case shows the outcome.')
+            : error.currentPlanVersionHash && error.currentPlanVersionHash !== action.planVersionHash
+              ? tx('The plan changed. The current plan is shown; review it before deciding.')
+              : tx('The decision was refused. The refreshed case shows the current state.'));
       }
     },
     onSettled: async () => { await refresh(); submitting.current = false; },
