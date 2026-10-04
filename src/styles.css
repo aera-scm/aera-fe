@@ -308,3 +308,10 @@ html { scroll-padding-bottom: 100px; }
 }
 .approval-value .time-left { font-weight: 600; color: #4d6a91; }
 .approval-value .time-left.late { color: #bc626b; }
+
+/* FR-OPZ-04 portfolio allocation */
+.portfolio-table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .95rem; }
+.portfolio-table th, .portfolio-table td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--line, #e5e7eb); }
+.portfolio-table tr.current th { font-weight: 700; }
+.portfolio-panel .plain-list { margin: .25rem 0 .75rem; padding-left: 1.1rem; }
+@media (max-width: 640px) { .portfolio-table { font-size: .85rem; } .portfolio-table th, .portfolio-table td { padding: .35rem; } }
