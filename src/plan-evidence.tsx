@@ -3,6 +3,8 @@ import type { CheckResult, ExecutionView, Option, PlanPartView, PlanView, RouteV
 import { Source, Status } from './components';
 import { tx } from './tx';
 export const usd = (value: number) => `${value.toLocaleString('en-US')} USD`;
+/** BR-18 confidence truncated (never rounded up past a floor) to three decimals for display. */
+export const confidence = (value: number) => String(Math.floor(value * 1000 + 1e-9) / 1000);
 export const planSource = (caseId: string, field: string) => `api:/cases/${encodeURIComponent(caseId)}/plan/${field}`;
 const routeSource = (caseId: string, partId: string, field: string) => `api:/cases/${encodeURIComponent(caseId)}/route/parts/${encodeURIComponent(partId)}/${field}`;
 const label = (value: string) => value.replaceAll('_', ' ').toLowerCase();
@@ -29,8 +31,10 @@ export function TimeLeft({ part }: { part: PlanPartView }) {
   if (left <= 0) return <strong className="time-left late">{tx('Deadline passed; re-verification required')}</strong>;
   return <time className="time-left" dateTime={part.deadlineAt}>{Math.floor(left / 3_600_000)} h {Math.floor(left % 3_600_000 / 60_000)} min left</time>;
 }
+/** FR-UI-07: checks fold into a pass/fail summary; any failed or flagged check keeps the list open. */
 function CheckList({ checks }: { checks: CheckResult[] }) {
-  return <ul className="check-list">{checks.map((check, index) => <li key={`${check.checkId}-${index}`} className={check.passed ? 'pass' : check.blocking ? 'fail' : 'flag'}><strong>{check.checkId}</strong><span className="check-state">{check.passed ? tx('Pass') : check.blocking ? tx('Blocked') : tx('Flagged')}</span><span>{check.detail}</span></li>)}</ul>;
+  const failed = checks.filter(check => !check.passed).length;
+  return <details className="check-details" open={failed > 0}><summary><span className={`check-summary ${failed ? 'fail' : 'pass'}`}>{checks.length - failed}/{checks.length}</span>{failed ? `${tx('checks passed')} · ${failed} ${tx('need attention')}` : tx('checks passed')}</summary><ul className="check-list">{checks.map((check, index) => <li key={`${check.checkId}-${index}`} className={check.passed ? 'pass' : check.blocking ? 'fail' : 'flag'}><strong>{check.checkId}</strong><span className="check-state">{check.passed ? tx('Pass') : check.blocking ? tx('Blocked') : tx('Flagged')}</span><span>{check.detail}</span></li>)}</ul></details>;
 }
 function OptionCard({ caseId, option, plan }: { caseId: string; option: Option; plan: PlanView }) {
   const ref = (field: string) => planSource(caseId, `options/${option.id}/${field}`);
@@ -49,7 +53,7 @@ export function PlanOptions({ caseId, plan }: { caseId: string; plan: PlanView }
   const planChecks = (plan.checks ?? []).filter(check => check.optionId == null);
   return <>
     <article className="panel recommendation"><h3>{tx('Chosen plan')}: {plan.plan.chosen.join(' + ')}</h3>
-      <dl className="details"><div><dt>{tx('Total cost')}</dt><dd><Source sourceRef={planSource(caseId, 'totalCostUsd')}>{usd(plan.plan.totalCostUsd)}</Source></dd></div><div><dt>{tx('Coverage')}</dt><dd><Source sourceRef={planSource(caseId, 'coverageUnits')}>{plan.plan.coverageUnits} {tx('units')}</Source></dd></div><div><dt>{tx('Plan confidence (BR-18)')}</dt><dd>{plan.confidence == null ? tx('Not verified yet') : <Source sourceRef={planSource(caseId, 'confidence')}>{String(plan.confidence)}</Source>}</dd></div><div><dt>{tx('Automated Reasoning')}</dt><dd>{plan.automatedReasoning ? <Status value={plan.automatedReasoning.status}/> : tx('Not returned by server')}</dd></div></dl>
+      <dl className="details"><div><dt>{tx('Total cost')}</dt><dd><Source sourceRef={planSource(caseId, 'totalCostUsd')}>{usd(plan.plan.totalCostUsd)}</Source></dd></div><div><dt>{tx('Coverage')}</dt><dd><Source sourceRef={planSource(caseId, 'coverageUnits')}>{plan.plan.coverageUnits} {tx('units')}</Source></dd></div><div><dt>{tx('Plan confidence (BR-18)')}</dt><dd>{plan.confidence == null ? tx('Not verified yet') : <Source sourceRef={planSource(caseId, 'confidence')}>{confidence(plan.confidence)}</Source>}</dd></div><div><dt>{tx('Automated Reasoning')}</dt><dd>{plan.automatedReasoning ? <Status value={plan.automatedReasoning.status}/> : tx('Not returned by server')}</dd></div></dl>
       <p className="fine-print">{plan.plan.rationale}</p>
       {planChecks.length ? <CheckList checks={planChecks}/> : null}
     </article>
@@ -69,8 +73,8 @@ export function PartEvidence({ caseId, plan, part }: { caseId: string; plan: Pla
       {part.tier === 2 && <>{!part.expired && <><div><dt>{tx('Assigned approver')}</dt><dd>{part.approverId ?? tx('None available')}</dd></div><div><dt>{tx('Backup approver')}</dt><dd>{part.backupApproverId ?? tx('None available')}</dd></div></>}<div><dt>{tx('Time left')}</dt><dd>{part.decision ? tx('Decided') : <TimeLeft part={part}/>}</dd></div></>}
       {part.decision && <><div><dt>{tx('Decision')}</dt><dd><Status value={part.decision}/>{part.decidedAt && <small> · {part.decidedAt}</small>}</dd></div>{part.comment ? <div><dt>{tx('Comment')}</dt><dd>{part.comment}</dd></div> : null}</>}
     </dl>
-    <h4>{tx('Sources')}</h4>
-    <ul className="source-list">{options.flatMap(option => (option.figures ?? []).map((figure, index) => <li key={`${option.id}-${figure.name}-${index}`}>{figure.name}: <Source sourceRef={figure.sourceRef}>{String(figure.value)} {figure.unit ?? ''}</Source></li>))}</ul>
+    <details className="fold"><summary>{tx('Sources')} ({options.reduce((sum, option) => sum + (option.figures?.length ?? 0), 0)})</summary>
+      <ul className="source-list">{options.flatMap(option => (option.figures ?? []).map((figure, index) => <li key={`${option.id}-${figure.name}-${index}`}>{figure.name}: <Source sourceRef={figure.sourceRef}>{String(figure.value)} {figure.unit ?? ''}</Source></li>))}</ul></details>
     <h4>{tx('Undo plan summary')}</h4>
     <UndoSummary part={part}/>
   </article>;

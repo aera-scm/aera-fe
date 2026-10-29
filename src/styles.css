@@ -309,6 +309,37 @@ html { scroll-padding-bottom: 100px; }
 .approval-value .time-left { font-weight: 600; color: #4d6a91; }
 .approval-value .time-left.late { color: #bc626b; }
 
+/* Long evidence stays compact: chosen-plan summary, folded checks and sources, scrolling trace */
+.live-workspace .panel.recommendation { display: block; color: inherit; padding: 22px; }
+.live-workspace .panel.recommendation h3 { color: #22477f; }
+.live-workspace .panel.recommendation .fine-print { color: #5f7392; }
+.live-workspace details > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; background: #f8fafd; font-size: .875rem; font-weight: 600; color: #485b79; transition: background-color 160ms, border-color 160ms; }
+.live-workspace details > summary::-webkit-details-marker { display: none; }
+.live-workspace details > summary::after { content: ''; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid #8094b3; border-bottom: 2px solid #8094b3; transform: rotate(45deg); transition: transform 160ms; }
+.live-workspace details[open] > summary::after { transform: rotate(-135deg); }
+.live-workspace details > summary:hover { background: #f0f5ff; border-color: #cbdaf0; }
+.live-workspace details[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.live-workspace details > ul { margin-top: 0; padding: 4px 12px 6px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 10px 10px; }
+.live-workspace details > ul > li:first-child { border-top: 0; }
+.live-workspace .check-summary { display: inline-grid; place-items: center; min-width: 44px; padding: 2px 8px; border-radius: 6px; font-size: .8125rem; }
+.live-workspace .check-summary.pass { background: #e9f6ef; color: #2c7660; }
+.live-workspace .check-summary.fail { background: #fff0f0; color: #b14f59; }
+.live-workspace .fold .source-list li { border-top: 1px solid var(--line); }
+.live-workspace .trace-panel { position: sticky; top: 96px; display: flex; flex-direction: column; max-height: calc(100dvh - 96px - var(--footer-height, 34px) - 16px); }
+.live-workspace .trace-panel .trace-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-top: 16px; padding-top: 6px; padding-right: 6px; scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+.live-workspace .trace-list li { padding-bottom: 16px; }
+.live-workspace .trace-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.live-workspace .trace-head .trace-kind { margin-bottom: 0; }
+.live-workspace .trace-list time { display: inline; margin-top: 0; font-size: .8125rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.live-workspace .trace-list strong { margin-top: 3px; }
+.live-workspace .trace-list p { margin-top: 2px; line-height: 1.55; }
+@media (max-width: 1200px) {
+  .live-workspace .trace-panel { position: static; max-height: 560px; }
+}
+@media (max-width: 640px) {
+  .live-workspace .trace-panel { max-height: 460px; }
+}
+
 /* FR-OPZ-04 portfolio allocation */
 .portfolio-table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .95rem; }
 .portfolio-table th, .portfolio-table td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--line, #e5e7eb); }
