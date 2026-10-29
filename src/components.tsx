@@ -13,8 +13,15 @@ function alignSourceTooltip(event: SyntheticEvent<HTMLSpanElement>) {
     tooltip.style.transform = `translateX(${left - bounds.left}px)`;
   });
 }
+// A figure built from many records joins their references with " + " or " | "; the tooltip shows
+// the first two and a count, the full list stays in title and data-source-ref (FR-IMP-03).
+export function sourceSummary(sourceRef: string, shown = 2) {
+  const refs = sourceRef.split(/\s+[+|]\s+/).filter(Boolean);
+  return { refs: refs.slice(0, shown), more: Math.max(0, refs.length - shown) };
+}
 export function Source({ children, sourceRef }: { children: ReactNode; sourceRef: string }) {
-  return <span className="sourced" tabIndex={0} title={sourceRef} data-source-ref={sourceRef} onFocus={alignSourceTooltip} onMouseEnter={alignSourceTooltip}>{children}<span className="source-tooltip"><Database size={12}/>{sourceRef}</span></span>;
+  const { refs, more } = sourceSummary(sourceRef);
+  return <span className="sourced" tabIndex={0} title={sourceRef} data-source-ref={sourceRef} onFocus={alignSourceTooltip} onMouseEnter={alignSourceTooltip}>{children}<span className="source-tooltip"><Database size={12}/><span className="source-lines">{refs.map((ref, i) => <span key={i}>{ref}</span>)}{more > 0 && <span className="source-more">+{more} {tx(more === 1 ? 'more source' : 'more sources')}</span>}</span></span></span>;
 }
 export function Brand() { return <span className="brand"><span className="brand-icon"><img src="/brand/logo.png" alt=""/></span><span>{tx("AERA")}<span className="brand-star">{tx("✦")}</span></span></span>; }
 export function Status({ value }: { value: string }) {
