@@ -281,7 +281,10 @@ test('FR-IMP-03 source tooltips stay readable on phone approval and evidence scr
       await source.focus();
       const tooltip = source.locator('.source-tooltip');
       await expect(tooltip).toBeVisible();
-      await expect(tooltip).toHaveText(await source.getAttribute('data-source-ref') ?? '');
+      // Many joined references show the first two and a count; the full list stays in data-source-ref.
+      const refs = (await source.getAttribute('data-source-ref') ?? '').split(/\s+[+|]\s+/).filter(Boolean);
+      const more = refs.length - 2;
+      await expect(tooltip).toHaveText(refs.slice(0, 2).join('') + (more > 0 ? `+${more} ${more === 1 ? 'more source' : 'more sources'}` : ''));
       const fits = async () => {
         const bounds = await tooltip.boundingBox();
         return bounds !== null && bounds.x >= 0 && bounds.x + bounds.width <= 375;
