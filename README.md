@@ -7,7 +7,7 @@ Planners see every supply chain exception, the evidence and SAP source behind ev
 the agent's reasoning live, and approve what needs a human — on a desktop or a phone.
 
 🏆 **1st place — AWS / SAP Agentic AI Hackathon, Asia Pacific 2026** (Intelligent Supply Chain track)<br>
-640 teams → 40 finalist teams → 1 winning team
+640 teams → 40 finalist teams → 1 winning team · hosted by AWS, SAP, APP and Sokrates BINUS
 
 [Backend, agent and infrastructure (aera-be)](https://github.com/aera-scm/aera-be) ·
 [Demo video](https://github.com/aera-scm/aera-be#demo) ·
